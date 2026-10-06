@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{TITLE}}</title>
+<style>
+{{CSS}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topnav">
+    <div class="links">
+      <a class="navbtn" href="../index.html">Índice de demos</a>
+      <a class="navbtn" id="navPrev" href="#">Patrón anterior</a>
+      <a class="navbtn" id="navNext" href="#">Patrón siguiente</a>
+    </div>
+    <div class="links">
+      <span class="kbd" id="hCount"></span>
+      <button class="navbtn" id="themeBtn" type="button">Tema claro / oscuro</button>
+    </div>
+  </div>
+  <header>
+    <h1 id="hTitle"></h1>
+    <p class="sub" id="hSub"></p>
+  </header>
+  <div class="intro" id="intro"></div>
+  <div class="legend" id="legend"></div>
+
+  <div class="stage-scroll"><div class="stage" id="stage"></div></div>
+
+  <div class="controls">
+    <button class="btn" id="btnReset" type="button">Reiniciar</button>
+    <button class="btn" id="btnPrev" type="button">Anterior</button>
+    <button class="btn primary" id="btnPlay" type="button">Reproducir</button>
+    <button class="btn" id="btnNext" type="button">Siguiente</button>
+    <button class="btn" id="btnReplay" type="button">Repetir animación</button>
+    <select class="btn" id="speed" aria-label="Velocidad">
+      <option value="0.6">Lento</option>
+      <option value="1" selected>Normal</option>
+      <option value="1.7">Rápido</option>
+    </select>
+    <span class="kbd">Flechas para avanzar o retroceder, espacio para reproducir</span>
+    <span class="counter" id="counter"></span>
+  </div>
+  <div class="timeline" id="timeline"></div>
+
+  <div class="panels">
+    <section class="panel">
+      <span class="step-lbl" id="stepLbl"></span>
+      <h2 class="step-title" id="stepTitle"></h2>
+      <div class="step-text" id="stepText"></div>
+      <div id="flowList"></div>
+      <div id="ctxWrap"></div>
+      <div id="outWrap"></div>
+    </section>
+    <section class="panel">
+      <div class="ptabs">
+        <button class="ptab active" data-view="board" id="boardTab" type="button">Estado compartido</button>
+        <button class="ptab" data-view="trace" type="button">Trace</button>
+      </div>
+      <div class="pview active" id="view-board"><div id="board"></div></div>
+      <div class="pview" id="view-trace">
+        <label class="trace-opts"><input type="checkbox" id="fullTrace"> Mostrar el trace completo (las líneas futuras aparecen tenues)</label>
+        <pre class="trace" id="traceBox"></pre>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel reading" id="reading"></section>
+</div>
+<script>
+window.META = {{META}};
+</script>
+<script>
+{{DATA}}
+</script>
+<script>
+{{JS}}
+</script>
+</body>
+</html>

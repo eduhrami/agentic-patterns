@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demos de agentes</title>
+<style>
+:root { --bg:#f6f7f9; --panel:#fff; --panel2:#f1f3f6; --border:#d9dee5; --text:#1c2430; --muted:#5f6b7a;
+  --a:#6d3fd1; --b:#c2700a; --c:#138a5e; --shadow:0 2px 10px rgba(20,30,50,.08); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#11151c; --panel:#1a2029; --panel2:#212834;
+  --border:#313a48; --text:#e6eaf0; --muted:#9aa5b4; --a:#a88bf5; --b:#f0a541; --c:#4cc995; --shadow:0 2px 12px rgba(0,0,0,.4); } }
+:root[data-theme="dark"] { --bg:#11151c; --panel:#1a2029; --panel2:#212834; --border:#313a48; --text:#e6eaf0; --muted:#9aa5b4;
+  --a:#a88bf5; --b:#f0a541; --c:#4cc995; --shadow:0 2px 12px rgba(0,0,0,.4); }
+* { box-sizing:border-box; } html, body { margin:0; }
+body { background:var(--bg); color:var(--text); line-height:1.5; font-size:15px;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+.wrap { max-width:1180px; margin:0 auto; padding:24px 16px 56px; }
+header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+h1 { font-size:1.6rem; margin:0; letter-spacing:-.01em; }
+header p { margin:4px 0 0; color:var(--muted); max-width:760px; }
+.tbtn { background:var(--panel); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:6px 10px; cursor:pointer; font-size:.85rem; }
+h2 { font-size:1.15rem; margin:30px 0 4px; }
+.lead { color:var(--muted); margin:0 0 12px; font-size:.92rem; max-width:860px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+.card { display:block; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:12px 14px;
+  text-decoration:none; color:var(--text); box-shadow:var(--shadow); border-top:4px solid var(--k); transition:transform .15s, border-color .15s; }
+.card:hover { transform:translateY(-2px); border-color:var(--k); }
+.card .n { font-size:.72rem; font-weight:800; color:var(--k); letter-spacing:.05em; text-transform:uppercase; }
+.card .t { font-weight:700; font-size:1rem; margin:2px 0; }
+.card .d { color:var(--muted); font-size:.84rem; }
+.card .f { display:inline-block; margin-top:6px; font-size:.72rem; background:var(--panel2); border-radius:5px; padding:1px 7px; color:var(--muted); }
+.card.off { opacity:.45; pointer-events:none; }
+table { border-collapse:collapse; font-size:.84rem; margin-top:8px; background:var(--panel); }
+th, td { border:1px solid var(--border); padding:6px 9px; text-align:left; vertical-align:top; }
+th { background:var(--panel2); }
+td code { font-size:.8rem; }
+.refs { font-size:.84rem; color:var(--muted); }
+.refs p { margin:0 0 6px; padding-left:22px; text-indent:-22px; }
+a { color:var(--a); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Demos de agentes y orquestación</h1>
+    <p>Animaciones paso a paso, construidas a partir de los traces del curso. Primero, la anatomía de un agente individual; después, cómo fluye el contexto entre agentes en cada patrón de orquestación.</p>
+  </div>
+  <button class="tbtn" id="themeBtn" type="button">Tema claro / oscuro</button>
+</header>
+
+<h2>1. Anatomía de un agente</h2>
+<p class="lead">Un solo agente por dentro: qué responde el modelo, qué ejecuta el harness, cómo regresan las observaciones y cómo crece el prompt en cada iteración.</p>
+<div class="grid">
+  <a class="card" style="--k:var(--b)" href="anatomia_agentes.html#precios"><div class="n">Anatomía · caso 1</div><div class="t">Agente de precios</div><div class="d">Ciclo básico de acción y observación con un motor de búsqueda y una calculadora.</div></a>
+  <a class="card" style="--k:var(--b)" href="anatomia_agentes.html#fc"><div class="n">Anatomía · caso 2</div><div class="t">Function Calling</div><div class="d">Estado de un pedido: el modelo devuelve una llamada en JSON y el programa la ejecuta.</div></a>
+  <a class="card" style="--k:var(--b)" href="anatomia_agentes.html#react"><div class="n">Anatomía · caso 3</div><div class="t">ReAct</div><div class="d">Queja por cobro duplicado: pensamiento, acción y observación en cinco iteraciones.</div></a>
+</div>
+
+<h2>2. Patrones de orquestación multi-agente</h2>
+<p class="lead">Cada demo muestra el flujo a nivel workflow: qué agente recibe qué contexto, qué escribe en el estado compartido, quién decide el siguiente paso y dónde intervienen el código y las personas. Los nombres de personas, empresas, folios y cifras son ficticios.</p>
+<div class="grid">
+  <a class="card" style="--k:var(--a)" href="patrones/01_secuencial.html"><div class="n">Patrón 1</div><div class="t">Secuencial</div><div class="d">Generación de un contrato</div><span class="f">Fuente: Microsoft</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/02_routing.html"><div class="n">Patrón 2</div><div class="t">Routing por clasificación</div><div class="d">Mensajes de servicio al cliente</div><span class="f">Fuente: Anthropic</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/03_coordinator_dispatcher.html"><div class="n">Patrón 3</div><div class="t">Coordinator/dispatcher</div><div class="d">Cargo no reconocido y falla del módem</div><span class="f">Fuente: Google ADK</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/04_handoff.html"><div class="n">Patrón 4</div><div class="t">Handoff</div><div class="d">Internet sin servicio y bonificación</div><span class="f">Fuente: Microsoft</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/05_fan_out_gather.html"><div class="n">Patrón 5</div><div class="t">Sectioning y fan-out/gather</div><div class="d">Revisión de un pull request</div><span class="f">Fuente: Google ADK</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/06_voting.html"><div class="n">Patrón 6</div><div class="t">Voting</div><div class="d">Detección de vulnerabilidades</div><span class="f">Fuente: Anthropic</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/07_seleccion_dinamica.html"><div class="n">Patrón 7</div><div class="t">Selección dinámica y agregación</div><div class="d">Análisis de una acción ficticia</div><span class="f">Fuente: Microsoft</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/08_orchestrator_workers.html"><div class="n">Patrón 8</div><div class="t">Orchestrator-workers</div><div class="d">Incidentes de soporte por región</div><span class="f">Fuente: Anthropic</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/09_hierarchical.html"><div class="n">Patrón 9</div><div class="t">Hierarchical decomposition</div><div class="d">Reporte trimestral de satisfacción</div><span class="f">Fuente: Google ADK</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/10_magentic.html"><div class="n">Patrón 10</div><div class="t">Magentic</div><div class="d">Respuesta a un incidente de SRE</div><span class="f">Fuente: Microsoft</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/11_evaluator_optimizer.html"><div class="n">Patrón 11</div><div class="t">Evaluator-optimizer y maker-checker</div><div class="d">Traducción literaria</div><span class="f">Fuente: Anthropic</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/12_generator_critic.html"><div class="n">Patrón 12</div><div class="t">Generator-critic</div><div class="d">Validación de una consulta SQL</div><span class="f">Fuente: Google ADK</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/13_iterative_refinement.html"><div class="n">Patrón 13</div><div class="t">Iterative refinement</div><div class="d">Optimización de una función</div><span class="f">Fuente: Google ADK</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/14_group_chat.html"><div class="n">Patrón 14</div><div class="t">Group chat</div><div class="d">Evaluación de un parque</div><span class="f">Fuente: Microsoft</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/15_human_in_the_loop.html"><div class="n">Patrón 15</div><div class="t">Human-in-the-loop</div><div class="d">Reembolso por cobro duplicado</div><span class="f">Fuente: Google ADK y Microsoft</span></a>
+  <a class="card" style="--k:var(--a)" href="patrones/16_compuestos.html"><div class="n">Patrón 16</div><div class="t">Patrones compuestos</div><div class="d">Falla de sincronización de una app</div><span class="f">Fuente: Google ADK</span></a>
+</div>
+
+<h2>Convenciones de notación de los traces</h2>
+<table><thead><tr><th>Etiqueta</th><th>Significado</th></tr></thead><tbody><tr><td><code>PATRÓN</code></td><td>Patrón que ilustra el trace</td></tr><tr><td><code>AGENTES</code></td><td>Agentes que participan, con sus herramientas o su función</td></tr><tr><td><code>ESTADO COMPARTIDO</code></td><td>Claves donde los agentes escriben sus resultados</td></tr><tr><td><code>PASO</code>, <code>TURNO</code>, <code>ITERACIÓN</code>, <code>RONDA</code></td><td>Unidad de avance según el patrón</td></tr><tr><td><code>Recibe</code></td><td>Contexto que entra al agente en ese paso</td></tr><tr><td><code>Acción</code> / <code>Observación</code></td><td>Llamada a una herramienta y su resultado</td></tr><tr><td><code>GATE</code></td><td>Verificación programática entre pasos</td></tr><tr><td><code>HANDOFF</code></td><td>Transferencia del control completo a otro agente</td></tr><tr><td><code>PAUSA</code> / <code>REANUDA</code></td><td>Punto de aprobación humana</td></tr></tbody></table>
+
+<h2>Referencias</h2>
+<div class="refs">
+<p>Anthropic. (2024, 19 de diciembre). <i>Building effective agents</i>. <a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">https://www.anthropic.com/engineering/building-effective-agents</a></p>
+<p>Cognition. (2025, 12 de junio). <i>Don't build multi-agents</i> (W. Yan). <a href="https://cognition.com/blog/dont-build-multi-agents" target="_blank" rel="noopener">https://cognition.com/blog/dont-build-multi-agents</a></p>
+<p>Google. (2025, 16 de diciembre). <i>Developer's guide to multi-agent patterns in ADK</i> (S. Saboo). Google Developers Blog. <a href="https://developers.googleblog.com/developers-guide-to-multi-agent-patterns-in-adk/" target="_blank" rel="noopener">https://developers.googleblog.com/developers-guide-to-multi-agent-patterns-in-adk/</a></p>
+<p>Microsoft. (2026, 12 de febrero). <i>AI agent orchestration patterns</i> (C. Kittel y C. Siemens). Azure Architecture Center. <a href="https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns" target="_blank" rel="noopener">https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns</a></p>
+<p>Ramirez, E. (2026). <i>Function Calling vs. ReAct: traces de ejemplo</i> [Material del curso].</p>
+<p>Yan, W. (2026, 22 de abril). <i>Multi-agents: What's actually working</i> [Publicación en X]. <a href="https://x.com/walden_yan/status/2047054554433462360" target="_blank" rel="noopener">https://x.com/walden_yan/status/2047054554433462360</a></p>
+</div>
+</div>
+<script>
+document.getElementById('themeBtn').onclick = function () {
+  var root = document.documentElement;
+  var dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+};
+</script>
+</body>
+</html>

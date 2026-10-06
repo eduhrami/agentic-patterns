@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human-in-the-loop</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --panel2: #f1f3f6; --border: #d9dee5;
+  --text: #1c2430; --muted: #5f6b7a; --code-bg: #f4f5f8;
+  --new: #fff4cc; --new-border: #e0b100;
+  --shadow: 0 2px 10px rgba(20, 30, 50, .08);
+  --t-input: #4b6584; --t-agent: #6d3fd1; --t-code: #59636f; --t-human: #c2357a;
+  --t-output: #0e7f9a; --t-state: #0e7f9a; --t-tool: #138a5e;
+  --f-ctx: #2463c9; --f-res: #138a5e; --f-handoff: #c2700a; --f-human: #c2357a; --f-ctrl: #59636f; --f-fb: #c0392b;
+  --ok: #138a5e; --bad: #c0392b; --warn: #c2700a; --info: #2463c9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --panel: #1a2029; --panel2: #212834; --border: #313a48;
+    --text: #e6eaf0; --muted: #9aa5b4; --code-bg: #151a22;
+    --new: #3b3417; --new-border: #c9a227; --shadow: 0 2px 12px rgba(0, 0, 0, .4);
+    --t-input: #8fa9cc; --t-agent: #a88bf5; --t-code: #a3adb9; --t-human: #f07ab3;
+    --t-output: #4cc3df; --t-state: #4cc3df; --t-tool: #4cc995;
+    --f-ctx: #6ea8ff; --f-res: #4cc995; --f-handoff: #f0a541; --f-human: #f07ab3; --f-ctrl: #a3adb9; --f-fb: #f07167;
+    --ok: #4cc995; --bad: #f07167; --warn: #f0a541; --info: #6ea8ff;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --panel: #1a2029; --panel2: #212834; --border: #313a48;
+  --text: #e6eaf0; --muted: #9aa5b4; --code-bg: #151a22;
+  --new: #3b3417; --new-border: #c9a227; --shadow: 0 2px 12px rgba(0, 0, 0, .4);
+  --t-input: #8fa9cc; --t-agent: #a88bf5; --t-code: #a3adb9; --t-human: #f07ab3;
+  --t-output: #4cc3df; --t-state: #4cc3df; --t-tool: #4cc995;
+  --f-ctx: #6ea8ff; --f-res: #4cc995; --f-handoff: #f0a541; --f-human: #f07ab3; --f-ctrl: #a3adb9; --f-fb: #f07167;
+  --ok: #4cc995; --bad: #f07167; --warn: #f0a541; --info: #6ea8ff;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--text); line-height: 1.5; font-size: 15px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+a { color: var(--f-ctx); }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 16px 16px 48px; }
+pre, code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+
+/* Encabezado */
+.topnav { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; font-size: .85rem; margin-bottom: 10px; }
+.topnav .links { display: flex; gap: 8px; flex-wrap: wrap; }
+.navbtn { background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 5px 10px; text-decoration: none; cursor: pointer; font-size: .85rem; }
+.navbtn:hover { border-color: var(--text); }
+.navbtn.disabled { opacity: .35; pointer-events: none; }
+header h1 { font-size: 1.45rem; margin: 0; letter-spacing: -.01em; }
+header .sub { color: var(--muted); margin: 2px 0 0; }
+.intro { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin: 12px 0; font-size: .93rem; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .78rem; color: var(--muted); margin: 0 0 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.legend i.ln { height: 3px; width: 18px; border-radius: 2px; }
+
+/* Escenario */
+.stage-scroll { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); background: var(--panel); box-shadow: var(--shadow); }
+.stage { position: relative; margin: 0 auto; }
+.stage svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.stage svg line { vector-effect: non-scaling-stroke; }
+.stage svg line.edge { stroke: var(--border); stroke-width: 2; }
+.stage svg line.flow { stroke: var(--c); stroke-width: 3; stroke-dasharray: 7 6; animation: march .6s linear infinite; opacity: 0; transition: opacity .3s; }
+.stage svg line.flow.vis { opacity: 1; }
+@keyframes march { to { stroke-dashoffset: -13; } }
+.grp { position: absolute; border: 1.5px dashed var(--border); border-radius: 14px; }
+.grp span { position: absolute; top: -10px; left: 12px; background: var(--panel); padding: 0 6px; font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+.nd {
+  position: absolute; transform: translate(-50%, -50%); background: var(--panel); z-index: 2;
+  border: 2px solid var(--border); border-top: 4px solid var(--c); border-radius: 10px; padding: 6px 9px 7px;
+  transition: box-shadow .25s, opacity .3s, border-color .25s; font-size: .8rem;
+}
+.nd .nd-type { font-size: .62rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+.nd .nd-name { font-weight: 700; font-size: .84rem; overflow-wrap: break-word; line-height: 1.25; }
+.nd .nd-desc { color: var(--muted); font-size: .7rem; line-height: 1.3; margin-top: 2px; }
+.nd.act { border-color: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 22%, transparent); }
+.nd.pulse { animation: pulse .6s ease-out; }
+@keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); } 40% { transform: translate(-50%, -50%) scale(1.05); } 100% { transform: translate(-50%, -50%) scale(1); } }
+.nd.off { border-style: dashed; }
+.nd.off > :not(.nd-badge) { opacity: .4; }
+.nd.hide { opacity: 0; pointer-events: none; }
+.nd.spawn { animation: spawn .5s ease-out both; }
+@keyframes spawn { from { opacity: 0; transform: translate(-50%, -50%) scale(.6); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+.nd-badge { position: absolute; top: -11px; right: -6px; font-size: .64rem; font-weight: 800; border-radius: 6px; padding: 1px 6px; color: var(--panel); background: var(--bc); white-space: nowrap; }
+.t-input { --c: var(--t-input); } .t-agent { --c: var(--t-agent); } .t-code { --c: var(--t-code); } .t-human { --c: var(--t-human); }
+.t-output { --c: var(--t-output); } .t-state { --c: var(--t-state); } .t-tool { --c: var(--t-tool); }
+.nd.t-state { border-style: double; border-width: 3px; border-top-width: 4px; }
+.nd.t-code { border-radius: 4px; }
+.nd.t-human { border-radius: 18px; }
+
+.packet {
+  position: absolute; z-index: 5; pointer-events: none; transform: translate(-50%, -50%);
+  background: var(--c); color: var(--panel); font-size: .7rem; font-weight: 700; padding: 3px 9px;
+  border-radius: 999px; box-shadow: 0 4px 12px rgba(0, 0, 0, .25); white-space: nowrap; opacity: 0;
+}
+
+/* Controles */
+.controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 14px 0 8px; }
+.btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: .88rem; font-weight: 600; }
+.btn:hover { border-color: var(--text); }
+.btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+.btn:disabled { opacity: .4; cursor: default; }
+select.btn { font-weight: 400; }
+.counter { color: var(--muted); font-size: .85rem; margin-left: auto; }
+.kbd { font-size: .76rem; color: var(--muted); }
+.timeline { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+.tl { border: 1px solid var(--border); background: var(--panel); color: var(--muted); border-radius: 6px; padding: 2px 8px; font-size: .72rem; cursor: pointer; font-weight: 600; }
+.tl.done { color: var(--text); }
+.tl.cur { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* Paneles */
+.panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); min-width: 0; }
+.step-lbl { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .05em; background: var(--text); color: var(--bg); border-radius: 6px; padding: 2px 8px; }
+.step-title { font-size: 1.1rem; margin: 8px 0 6px; }
+.step-text p { margin: 0 0 8px; }
+.flows { list-style: none; padding: 0; margin: 4px 0 10px; font-size: .82rem; }
+.flows li { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+.flows li:last-child { border-bottom: none; }
+.flows .fk { flex: none; font-size: .64rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--panel); background: var(--c); border-radius: 4px; padding: 1px 6px; }
+.flows .ft { font-weight: 600; }
+.sec-lbl { font-size: .74rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 12px 0 4px; }
+.ctx { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; background: color-mix(in srgb, var(--f-ctx) 4%, var(--panel)); }
+.ctx h4 { margin: 0 0 6px; font-size: .86rem; }
+.ctx h4 .to { font-family: ui-monospace, Menlo, Consolas, monospace; }
+.part { border-left: 4px solid var(--c); background: var(--panel); border-radius: 6px; padding: 5px 9px; margin-bottom: 5px; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.part .pl { font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--c); }
+.part .pl .src { color: var(--muted); font-weight: 600; text-transform: none; letter-spacing: 0; }
+.part pre { margin: 2px 0 0; font-size: .76rem; white-space: pre-wrap; word-break: break-word; }
+.p-input { --c: var(--t-input); } .p-instr { --c: var(--f-handoff); } .p-state { --c: var(--t-state); } .p-result { --c: var(--f-res); }
+.p-feedback { --c: var(--f-fb); } .p-human { --c: var(--t-human); } .p-desc { --c: var(--t-agent); } .p-hist { --c: var(--f-ctrl); }
+.part.miss { --c: var(--bad); border-style: dashed; background: transparent; }
+pre.out { background: var(--code-bg); border: 1px solid var(--border); border-left: 4px solid var(--t-agent); border-radius: 8px; padding: 9px 11px; font-size: .78rem; white-space: pre-wrap; word-break: break-word; margin: 0; }
+.out-by { font-family: ui-monospace, Menlo, Consolas, monospace; text-transform: none; letter-spacing: 0; }
+
+.ptabs { display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.ptab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); padding: 6px 10px; cursor: pointer; font-weight: 600; font-size: .88rem; }
+.ptab.active { color: var(--text); border-bottom-color: var(--text); }
+.pview { display: none; } .pview.active { display: block; }
+.board-row { border: 1px solid var(--border); border-left: 4px solid var(--t-state); border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; position: relative; }
+.board-row .bk { font-size: .72rem; font-weight: 800; color: var(--t-state); font-family: ui-monospace, Menlo, Consolas, monospace; }
+.board-row .by { font-size: .7rem; color: var(--muted); margin-left: 6px; }
+.board-row pre { margin: 2px 0 0; font-size: .76rem; white-space: pre-wrap; word-break: break-word; }
+.board-row.new { background: var(--new); border-color: var(--new-border); border-left-color: var(--t-state); }
+.board-row .tag { position: absolute; right: 8px; top: 5px; font-size: .62rem; font-weight: 800; background: var(--new-border); color: #1c1600; border-radius: 4px; padding: 0 6px; }
+.empty { color: var(--muted); font-size: .85rem; font-style: italic; }
+.trace-opts { font-size: .8rem; color: var(--muted); margin-bottom: 6px; display: flex; gap: 6px; align-items: center; }
+pre.trace { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: .74rem; max-height: 560px; overflow: auto; margin: 0; white-space: pre; }
+pre.trace .ln { display: block; min-height: 1.3em; }
+pre.trace .past { color: var(--muted); }
+pre.trace .now { background: var(--new); color: var(--text); border-left: 3px solid var(--new-border); padding-left: 6px; margin-left: -9px; }
+pre.trace .fut { color: var(--muted); opacity: .35; }
+pre.trace .gone { display: none; }
+
+.reading { margin-top: 14px; }
+.reading h2 { font-size: 1.05rem; margin: 0 0 8px; }
+.reading ul { margin: 0 0 6px; padding-left: 20px; }
+.reading li { margin-bottom: 6px; }
+.refs { font-size: .82rem; color: var(--muted); }
+.refs p { margin: 0 0 6px; padding-left: 22px; text-indent: -22px; }
+
+@media (max-width: 900px) {
+  .panels { grid-template-columns: 1fr; }
+  pre.trace { white-space: pre-wrap; }
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topnav">
+    <div class="links">
+      <a class="navbtn" href="../index.html">Índice de demos</a>
+      <a class="navbtn" id="navPrev" href="#">Patrón anterior</a>
+      <a class="navbtn" id="navNext" href="#">Patrón siguiente</a>
+    </div>
+    <div class="links">
+      <span class="kbd" id="hCount"></span>
+      <button class="navbtn" id="themeBtn" type="button">Tema claro / oscuro</button>
+    </div>
+  </div>
+  <header>
+    <h1 id="hTitle"></h1>
+    <p class="sub" id="hSub"></p>
+  </header>
+  <div class="intro" id="intro"></div>
+  <div class="legend" id="legend"></div>
+
+  <div class="stage-scroll"><div class="stage" id="stage"></div></div>
+
+  <div class="controls">
+    <button class="btn" id="btnReset" type="button">Reiniciar</button>
+    <button class="btn" id="btnPrev" type="button">Anterior</button>
+    <button class="btn primary" id="btnPlay" type="button">Reproducir</button>
+    <button class="btn" id="btnNext" type="button">Siguiente</button>
+    <button class="btn" id="btnReplay" type="button">Repetir animación</button>
+    <select class="btn" id="speed" aria-label="Velocidad">
+      <option value="0.6">Lento</option>
+      <option value="1" selected>Normal</option>
+      <option value="1.7">Rápido</option>
+    </select>
+    <span class="kbd">Flechas para avanzar o retroceder, espacio para reproducir</span>
+    <span class="counter" id="counter"></span>
+  </div>
+  <div class="timeline" id="timeline"></div>
+
+  <div class="panels">
+    <section class="panel">
+      <span class="step-lbl" id="stepLbl"></span>
+      <h2 class="step-title" id="stepTitle"></h2>
+      <div class="step-text" id="stepText"></div>
+      <div id="flowList"></div>
+      <div id="ctxWrap"></div>
+      <div id="outWrap"></div>
+    </section>
+    <section class="panel">
+      <div class="ptabs">
+        <button class="ptab active" data-view="board" id="boardTab" type="button">Estado compartido</button>
+        <button class="ptab" data-view="trace" type="button">Trace</button>
+      </div>
+      <div class="pview active" id="view-board"><div id="board"></div></div>
+      <div class="pview" id="view-trace">
+        <label class="trace-opts"><input type="checkbox" id="fullTrace"> Mostrar el trace completo (las líneas futuras aparecen tenues)</label>
+        <pre class="trace" id="traceBox"></pre>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel reading" id="reading"></section>
+</div>
+<script>
+window.META = {
+ "num": 15,
+ "total": 16,
+ "title": "Human-in-the-loop",
+ "short": "Human-in-the-loop",
+ "escenario": "Reembolso por cobro duplicado",
+ "fuente": "Google ADK y Microsoft",
+ "intro": "El agente del trace de ReAct sobre el cobro duplicado ahora tiene una regla de aprobación limitada a una herramienta. Las consultas avanzan solas; el reembolso mayor a $100 MXN pausa la ejecución hasta que una persona lo aprueba.",
+ "lectura": [
+  "<b>Quién decide:<\/b> la regla de aprobación decide cuándo pausar; la supervisora decide si la acción procede.",
+  "<b>Qué muestra:<\/b> la aprobación está limitada a una herramienta y a un umbral, así que las consultas no esperan a nadie. El punto de control permite reanudar sin repetir trabajo.",
+  "<b>Contrapunto (Cognition):<\/b> la supervisora recibe la evidencia y el enlace al trace, no solo \"reembolsar $199\". Con ese contexto puede aprobar en minutos y detectar si algo no cuadra."
+ ],
+ "refs": [
+  "Cognition. (2025, 12 de junio). <i>Don't build multi-agents<\/i> (W. Yan). <a href=\"https://cognition.com/blog/dont-build-multi-agents\" target=\"_blank\" rel=\"noopener\">https://cognition.com/blog/dont-build-multi-agents<\/a>",
+  "Google. (2025, 16 de diciembre). <i>Developer's guide to multi-agent patterns in ADK<\/i> (S. Saboo). Google Developers Blog. <a href=\"https://developers.googleblog.com/developers-guide-to-multi-agent-patterns-in-adk/\" target=\"_blank\" rel=\"noopener\">https://developers.googleblog.com/developers-guide-to-multi-agent-patterns-in-adk/<\/a>",
+  "Microsoft. (2026, 12 de febrero). <i>AI agent orchestration patterns<\/i> (C. Kittel y C. Siemens). Azure Architecture Center. <a href=\"https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns\" target=\"_blank\" rel=\"noopener\">https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns<\/a>",
+  "Ramirez, E. (2026). <i>Function Calling vs. ReAct: traces de ejemplo<\/i> [Material del curso]."
+ ],
+ "trace": "PATRÓN       Human-in-the-loop\nREGLA DE APROBACIÓN (limitada a herramientas)\n    consultar_pagos, consultar_historial_cuenta, buscar_base_conocimiento  → sin aprobación\n    solicitar_reembolso con monto > $100 MXN                               → requiere aprobación\nCASO         cliente C-1027 reporta un doble cobro de su suscripción\n\nITERACIONES 1 a 3 (sin aprobación)\n    consultar_pagos         → P-88310 (1 sep) y P-88342 (3 sep), $199 cada uno, tarjetas distintas\n    consultar_historial     → cambio de método de pago el 2 sep\n    buscar_base_conocimiento → error conocido #312: procede el reembolso del segundo cargo\n\nITERACIÓN 4\n    Acción propuesta: solicitar_reembolso(id_pago = \"P-88342\", monto = 199,\n                                          motivo = \"Cargo duplicado, error #312\")\n    Regla:   199 > 100 → requiere aprobación\n    PAUSA    se guarda el estado de la ejecución (punto de control CK-77)\n\n    SOLICITUD DE APROBACIÓN → supervisora de soporte\n        Acción:     reembolso de $199 MXN del pago P-88342\n        Evidencia:  dos cargos del mismo periodo · cambio de tarjeta el 2 sep ·\n                    coincidencia con el error conocido #312\n        Trace:      enlace a las iteraciones 1 a 3\n    RESPUESTA (14 minutos después): aprobado\n\n    REANUDA  desde CK-77, sin repetir las iteraciones 1 a 3\n    Acción:      solicitar_reembolso(id_pago = \"P-88342\", monto = 199, ...)\n    Observación: reembolso R-5521 creado\n\nITERACIÓN 5\n    Respuesta final al cliente con la causa y el folio R-5521\n\nALTERNATIVA · si la supervisora hubiera respondido con retroalimentación\n    \"Verifica primero si P-88310 ya tiene un reembolso parcial.\"\n    → la retroalimentación regresa al agente como nueva observación y el ciclo continúa",
+ "prev": "14_group_chat.html",
+ "next": "16_compuestos.html"
+};
+</script>
+<script>
+window.PATRON = {
+  h: 470, minW: 900,
+  boardTitle: 'Estado de la ejecución',
+  boardEmpty: 'La ejecución no ha comenzado.',
+  extra: 'Es el mismo caso del demo <a href="../anatomia_agentes.html#react">ReAct</a> de la anatomía de un agente.',
+  nodes: [
+    { id: 'cli', type: 'input', tag: 'Usuario', name: 'Cliente C-1027', desc: 'doble cobro de su suscripción', x: 9, y: 22, w: 140, mono: false },
+    { id: 'ag', type: 'agent', name: 'agente de soporte', desc: 'ciclo ReAct', x: 33, y: 50, w: 150, mono: false },
+    { id: 'con', type: 'tool', tag: 'Consultas (sin aprobación)', name: 'consultar_pagos · consultar_historial_cuenta · buscar_base_conocimiento', x: 33, y: 88, w: 230 },
+    { id: 'rule', type: 'code', tag: 'Regla de aprobación', name: 'solicitar_reembolso con monto > $100 MXN', x: 62, y: 50, w: 175 },
+    { id: 'ck', type: 'state', tag: 'Punto de control', name: 'CK-77', desc: 'estado guardado de la ejecución', x: 62, y: 13, w: 150 },
+    { id: 'sup', type: 'human', name: 'supervisora de soporte', x: 62, y: 88, w: 160, mono: false },
+    { id: 'reem', type: 'tool', name: 'solicitar_reembolso', x: 89, y: 50, w: 150 }
+  ],
+  edges: [['cli', 'ag'], ['ag', 'con'], ['ag', 'rule'], ['rule', 'ck'], ['rule', 'sup'], ['rule', 'reem']],
+  steps: [
+    {
+      lbl: 'DISEÑO', title: 'La aprobación se limita a una herramienta y un umbral',
+      text: 'Las consultas avanzan solas. Solo un reembolso mayor a $100 MXN pausa la ejecución hasta que una persona lo aprueba.',
+      active: ['rule'],
+      out: { by: 'rule', label: 'Regla de aprobación', text: 'consultar_pagos, consultar_historial_cuenta, buscar_base_conocimiento  → sin aprobación\nsolicitar_reembolso con monto > $100 MXN                               → requiere aprobación' },
+      tr: ['PATRÓN', 'CASO']
+    },
+    {
+      lbl: 'ITER 1 a 3', title: 'Las consultas no esperan a nadie',
+      text: 'Tres iteraciones de consulta sin aprobación: pagos, historial y base de conocimiento.',
+      flows: [
+        { from: 'cli', to: 'ag', k: 'ctx', label: 'queja' },
+        { from: 'ag', to: 'con', k: 'ctx', label: '3 consultas', ph: 1 },
+        { from: 'con', to: 'ag', k: 'res', label: 'observaciones', ph: 2 }
+      ],
+      active: ['ag'],
+      badges: { con: ['sin aprobación', 'ok'] },
+      out: { label: 'Observaciones', text: 'consultar_pagos          → P-88310 (1 sep) y P-88342 (3 sep), $199 cada uno, tarjetas distintas\nconsultar_historial      → cambio de método de pago el 2 sep\nbuscar_base_conocimiento → error conocido #312: procede el reembolso del segundo cargo' },
+      board: { 'iteraciones 1 a 3': ['Dos cargos de $199 · cambio de tarjeta el 2 sep · error conocido #312', 'agente'] },
+      tr: ['ITERACIONES 1 a 3', 'buscar_base_conocimiento →']
+    },
+    {
+      lbl: 'ITER 4 · REGLA', title: 'La acción propuesta activa la regla',
+      text: 'El agente propone el reembolso. Antes de ejecutarlo, la regla compara el monto contra el umbral: 199 > 100.',
+      flows: [{ from: 'ag', to: 'rule', k: 'ctrl', label: 'acción propuesta' }],
+      active: ['rule'],
+      badges: { rule: ['199 > 100', 'warn'] },
+      out: { by: 'ag', label: 'Acción propuesta', text: 'solicitar_reembolso(id_pago = "P-88342", monto = 199,\n                    motivo = "Cargo duplicado, error #312")' },
+      tr: ['ITERACIÓN 4', 'Regla:   199 > 100']
+    },
+    {
+      lbl: 'PAUSA', title: 'Se guarda el estado en un punto de control',
+      text: 'La ejecución se detiene y su estado queda guardado en CK-77. Así podrá reanudarse sin repetir las iteraciones 1 a 3.',
+      flows: [{ from: 'rule', to: 'ck', k: 'ctrl', label: 'estado de la ejecución' }],
+      active: ['ck'],
+      badges: { ag: ['en pausa', 'warn'] },
+      board: { 'punto de control': ['CK-77: iteraciones 1 a 3 + acción propuesta', 'regla'] },
+      tr: ['PAUSA', 'PAUSA']
+    },
+    {
+      lbl: 'SOLICITUD', title: 'La supervisora recibe evidencia, no solo "reembolsar $199"',
+      text: 'La solicitud de aprobación incluye la acción, la evidencia y un enlace al trace. Con ese contexto la supervisora puede aprobar en minutos y detectar si algo no cuadra.',
+      flows: [{ from: 'rule', to: 'sup', k: 'human', label: 'solicitud de aprobación' }],
+      active: ['sup'],
+      ctx: { to: 'sup', parts: [
+        { k: 'instr', src: 'acción', text: 'reembolso de $199 MXN del pago P-88342' },
+        { k: 'result', src: 'evidencia', text: 'dos cargos del mismo periodo · cambio de tarjeta el 2 sep ·\ncoincidencia con el error conocido #312' },
+        { k: 'hist', src: 'trace', text: 'enlace a las iteraciones 1 a 3' }
+      ] },
+      tr: ['SOLICITUD DE APROBACIÓN', 'Trace:      enlace']
+    },
+    {
+      lbl: 'APROBADO', title: 'La supervisora aprueba',
+      text: 'La respuesta llega 14 minutos después. Mientras tanto, la ejecución esperó en el punto de control.',
+      flows: [{ from: 'sup', to: 'rule', k: 'human', label: 'aprobado' }],
+      active: ['sup'],
+      badges: { sup: ['aprobado', 'ok'] },
+      board: { 'aprobación': ['aprobado (14 minutos después)', 'supervisora'] },
+      tr: ['RESPUESTA (14 minutos después)', 'RESPUESTA (14 minutos después)']
+    },
+    {
+      lbl: 'REANUDA', title: 'La ejecución se reanuda desde CK-77',
+      text: 'El agente retoma desde el punto de control, sin repetir las consultas, y ejecuta el reembolso.',
+      flows: [
+        { from: 'ck', to: 'rule', k: 'ctrl', label: 'estado CK-77' },
+        { from: 'rule', to: 'reem', k: 'ctx', label: 'reembolso aprobado', ph: 1 },
+        { from: 'reem', to: 'rule', k: 'res', label: 'R-5521', ph: 2 }
+      ],
+      active: ['ck', 'reem'],
+      badges: { ag: null, rule: ['aprobado', 'ok'] },
+      out: { label: 'Observación', text: 'reembolso R-5521 creado' },
+      board: { reembolso: ['R-5521 creado', 'solicitar_reembolso'] },
+      tr: ['REANUDA', 'Observación: reembolso R-5521']
+    },
+    {
+      lbl: 'ITER 5', title: 'Respuesta final al cliente',
+      text: 'El agente responde con la causa y el folio del reembolso.',
+      flows: [{ from: 'ag', to: 'cli', k: 'res', label: 'causa + folio R-5521' }],
+      active: ['ag'],
+      tr: ['ITERACIÓN 5', 'Respuesta final al cliente']
+    },
+    {
+      lbl: 'ALTERNATIVA', title: 'Si la supervisora hubiera respondido con retroalimentación',
+      text: 'La aprobación no es solo sí o no. Si la supervisora pide una verificación adicional, su retroalimentación regresa al agente como una nueva observación y el ciclo continúa.',
+      flows: [{ from: 'sup', to: 'ag', k: 'fb', label: 'retroalimentación' }],
+      active: ['sup', 'ag'],
+      badges: { sup: ['retroalimentación', 'warn'], rule: null },
+      ctx: { to: 'ag', parts: [{ k: 'feedback', src: 'supervisora, como nueva observación', text: '"Verifica primero si P-88310 ya tiene un reembolso parcial."' }] },
+      tr: ['ALTERNATIVA', 'la retroalimentación regresa al agente']
+    }
+  ]
+};
+
+</script>
+<script>
+/* Motor común de los demos de patrones de orquestación.
+   Lee window.PATRON (diagrama y pasos) y window.META (textos extraídos del .md). */
+(function () {
+  const P = window.PATRON, M = window.META;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const TYPES = {
+    input: 'Entrada', agent: 'Agente', code: 'Código', human: 'Persona',
+    output: 'Salida', state: 'Estado', tool: 'Herramienta'
+  };
+  const FLOWS = {
+    ctx: ['Contexto', 'var(--f-ctx)'], res: ['Resultado', 'var(--f-res)'], handoff: ['Handoff', 'var(--f-handoff)'],
+    human: ['Persona', 'var(--f-human)'], ctrl: ['Control', 'var(--f-ctrl)'], fb: ['Retroalimentación', 'var(--f-fb)']
+  };
+  const PARTS = {
+    input: 'Entrada original', instr: 'Instrucción', state: 'Del estado compartido', result: 'Resultado de otro agente',
+    feedback: 'Retroalimentación', human: 'De una persona', desc: 'Descripciones de agentes', hist: 'Historial'
+  };
+  const TONES = { ok: 'var(--ok)', bad: 'var(--bad)', warn: 'var(--warn)', info: 'var(--info)', off: 'var(--muted)' };
+
+  const steps = P.steps;
+  const nodeById = {};
+  P.nodes.forEach(n => nodeById[n.id] = n);
+  let cur = 0, playing = false, timer = null;
+
+  /* ---------- Encabezado y textos ---------- */
+  document.title = M.short;
+  $('hTitle').textContent = M.num + '. ' + M.title;
+  $('hSub').textContent = 'Escenario: ' + M.escenario + ' · Fuente del ejemplo: ' + M.fuente;
+  $('hCount').textContent = 'Patrón ' + M.num + ' de ' + M.total;
+  const navPrev = $('navPrev'), navNext = $('navNext');
+  if (M.prev) navPrev.href = M.prev; else navPrev.classList.add('disabled');
+  if (M.next) navNext.href = M.next; else navNext.classList.add('disabled');
+  $('intro').innerHTML = M.intro + (P.extra ? ' ' + P.extra : '');
+  $('reading').innerHTML = '<h2>Lectura del trace</h2><ul>' + M.lectura.map(l => '<li>' + l + '</li>').join('') + '</ul>' +
+    '<h2 style="margin-top:14px">Referencias</h2><div class="refs">' + M.refs.map(r => '<p>' + r + '</p>').join('') + '</div>';
+  $('boardTab').textContent = P.boardTitle || 'Estado compartido';
+
+  /* Leyenda con los tipos que aparecen en este patrón */
+  const usedTypes = [...new Set(P.nodes.map(n => n.type))];
+  const usedFlows = [...new Set(steps.flatMap(s => (s.flows || []).map(f => f.k || 'ctx')))];
+  $('legend').innerHTML =
+    usedTypes.map(t => `<span><i style="background:var(--t-${t})"></i>${TYPES[t]}</span>`).join('') +
+    usedFlows.map(k => `<span><i class="ln" style="background:${FLOWS[k][1]}"></i>Flujo: ${FLOWS[k][0].toLowerCase()}</span>`).join('');
+
+  /* ---------- Escenario ---------- */
+  const stage = $('stage');
+  stage.style.height = (P.h || 440) + 'px';
+  stage.style.minWidth = (P.minW || 820) + 'px';
+  let html = '<svg viewBox="0 0 100 100" preserveAspectRatio="none" id="svg"></svg>';
+  (P.groups || []).forEach(g => {
+    html += `<div class="grp" style="left:${g.x}%;top:${g.y}%;width:${g.w}%;height:${g.hh}%"><span>${esc(g.label)}</span></div>`;
+  });
+  P.nodes.forEach(n => {
+    html += `<div class="nd t-${n.type}" id="n-${n.id}" style="left:${n.x}%;top:${n.y}%;width:${n.w || 150}px">` +
+      `<div class="nd-type">${n.tag || TYPES[n.type]}</div><div class="nd-name${n.mono === false ? '' : ' mono'}">${esc(n.name).replace(/_/g, '_<wbr>')}</div>` +
+      (n.desc ? `<div class="nd-desc">${esc(n.desc)}</div>` : '') + `<span class="nd-badge" id="b-${n.id}" hidden></span></div>`;
+  });
+  stage.innerHTML = html;
+  const svg = $('svg');
+  svg.innerHTML = (P.edges || []).map(([a, b]) => {
+    const A = nodeById[a], B = nodeById[b];
+    return `<line class="edge" data-e="${a}|${b}" x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}"/>`;
+  }).join('') + '<g id="flowLines"></g>';
+
+  /* ---------- Trace: ubicar las líneas de cada paso ---------- */
+  const lines = M.trace.split('\n');
+  const errors = [];
+  let from = 0;
+  steps.forEach((s, i) => {
+    if (!s.tr) { s._s = s._e = null; return; }
+    const [a, b] = s.tr;
+    let si = lines.findIndex((l, k) => k >= from && l.includes(a));
+    if (si < 0) si = lines.findIndex(l => l.includes(a));
+    let ei = b ? lines.findIndex((l, k) => k >= si && l.includes(b)) : si;
+    if (si < 0 || ei < 0) { errors.push(`Paso ${i}: no se encontró "${si < 0 ? a : b}"`); s._s = s._e = null; return; }
+    s._s = si; s._e = ei; from = si;
+  });
+  window.__traceErrors = errors;
+  if (errors.length) console.warn(errors);
+
+  /* ---------- Estado acumulado ---------- */
+  function stateAt(i) {
+    const st = { board: new Map(), badges: {}, shown: new Set(P.nodes.filter(n => !n.hidden).map(n => n.id)), off: new Set(), maxE: -1 };
+    for (let k = 0; k <= i; k++) {
+      const s = steps[k];
+      if (s.boardReset) st.board.clear();
+      Object.entries(s.board || {}).forEach(([key, v]) => {
+        if (v === null) st.board.delete(key);
+        else {
+          const [val, by] = Array.isArray(v) ? v : [v, ''];
+          st.board.set(key, { val, by, at: k });
+        }
+      });
+      if (s.badgesReset) st.badges = {};
+      Object.entries(s.badges || {}).forEach(([id, v]) => {
+        if (v === null) { delete st.badges[id]; st.off.delete(id); }
+        else { st.badges[id] = v; if (v[1] === 'off') st.off.add(id); else st.off.delete(id); }
+      });
+      (s.show || []).forEach(id => st.shown.add(id));
+      if (s._e != null) st.maxE = Math.max(st.maxE, s._e);
+    }
+    return st;
+  }
+
+  /* ---------- Render de un paso ---------- */
+  function speed() { return parseFloat($('speed').value) || 1; }
+
+  function go(i, animate) {
+    cur = Math.max(0, Math.min(steps.length - 1, i));
+    const s = steps[cur], st = stateAt(cur), prev = cur > 0 ? stateAt(cur - 1) : null;
+    const dur = 1000 / speed();
+    const flows = s.flows || [];
+
+    /* Nodos */
+    P.nodes.forEach(n => {
+      const el = $('n-' + n.id);
+      el.classList.remove('act', 'pulse');
+      el.classList.toggle('off', st.off.has(n.id));
+      const shown = st.shown.has(n.id);
+      el.classList.toggle('hide', !shown);
+      if (shown && prev && !prev.shown.has(n.id) && animate) { el.classList.remove('spawn'); void el.offsetWidth; el.classList.add('spawn'); }
+      const b = $('b-' + n.id), bv = st.badges[n.id];
+      if (bv) { b.hidden = false; b.textContent = bv[0]; b.style.setProperty('--bc', TONES[bv[1]] || TONES.info); }
+      else b.hidden = true;
+    });
+    (s.active || []).forEach(id => $('n-' + id).classList.add('act'));
+
+    /* Flujos: líneas punteadas y paquetes */
+    document.querySelectorAll('.packet').forEach(p => p.remove());
+    const fl = $('flowLines');
+    fl.innerHTML = flows.map((f, k) => {
+      const A = nodeById[f.from], B = nodeById[f.to], c = FLOWS[f.k || 'ctx'][1];
+      return `<line class="flow" id="fl-${k}" x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" style="--c:${c}"/>`;
+    }).join('');
+    flows.forEach((f, k) => {
+      const d = animate ? (f.ph || 0) * dur : 0;
+      setTimeout(() => {
+        if (steps[cur] !== s) return;
+        const line = $('fl-' + k); if (line) line.classList.add('vis');
+        if (animate) flyPacket(f, dur);
+      }, d);
+      setTimeout(() => {
+        if (steps[cur] !== s) return;
+        const t = $('n-' + f.to);
+        t.classList.add('act');
+        if (animate) { t.classList.remove('pulse'); void t.offsetWidth; t.classList.add('pulse'); }
+      }, animate ? d + dur * .9 : 0);
+    });
+
+    /* Panel del paso */
+    $('stepLbl').textContent = s.lbl;
+    $('stepTitle').textContent = s.title;
+    $('stepText').innerHTML = (s.text || '').split('\n\n').map(p => '<p>' + p + '</p>').join('');
+    $('flowList').innerHTML = flows.length
+      ? '<div class="sec-lbl">Flujos de información en este paso</div><ul class="flows">' + flows.map(f => {
+          const [kl, c] = FLOWS[f.k || 'ctx'];
+          return `<li><span class="fk" style="--c:${c}">${kl}</span><span><span class="ft mono">${esc(nodeById[f.from].name)} → ${esc(nodeById[f.to].name)}</span>${f.label ? ': ' + esc(f.label) : ''}</span></li>`;
+        }).join('') + '</ul>'
+      : '';
+    const ctxs = s.ctx ? (Array.isArray(s.ctx) ? s.ctx : [s.ctx]) : [];
+    $('ctxWrap').innerHTML = ctxs.length
+      ? '<div class="sec-lbl">Contexto que recibe</div>' + ctxs.map(c =>
+          `<div class="ctx"><h4>${c.title ? esc(c.title) : 'Recibe <span class="to">' + esc(nodeById[c.to] ? nodeById[c.to].name : c.to) + '</span>'}</h4>` +
+          (c.parts || []).map(p => `<div class="part p-${p.k}"><div class="pl">${PARTS[p.k]}${p.src ? ' <span class="src">· ' + esc(p.src) + '</span>' : ''}</div><pre>${esc(p.text)}</pre></div>`).join('') +
+          (c.miss || []).map(m => `<div class="part miss"><div class="pl">No recibe</div><pre>${esc(m)}</pre></div>`).join('') +
+          '</div>').join('')
+      : '';
+    const outs = s.out ? (Array.isArray(s.out) ? s.out : [s.out]) : [];
+    $('outWrap').innerHTML = outs.map(o =>
+      `<div class="sec-lbl">${esc(o.label || 'Produce')}${o.by ? ' <span class="out-by">· ' + esc(nodeById[o.by] ? nodeById[o.by].name : o.by) + '</span>' : ''}</div><pre class="out">${esc(o.text)}</pre>`).join('');
+
+    /* Tablero */
+    $('board').innerHTML = st.board.size
+      ? [...st.board.entries()].map(([key, e]) => {
+          const isNew = e.at === cur;
+          const wasThere = prev && prev.board.has(key);
+          return `<div class="board-row${isNew ? ' new' : ''}">${isNew ? `<span class="tag">${wasThere ? 'ACTUALIZADO' : 'NUEVO'}</span>` : ''}` +
+            `<span class="bk">${esc(key)}</span>${e.by ? `<span class="by">escribe: ${esc(e.by)}</span>` : ''}<pre>${esc(e.val)}</pre></div>`;
+        }).join('')
+      : `<p class="empty">${esc(P.boardEmpty || 'Todavía vacío.')}</p>`;
+
+    /* Trace */
+    renderTrace(s, st);
+
+    /* Línea de tiempo y controles */
+    document.querySelectorAll('.tl').forEach(b => {
+      const k = +b.dataset.i;
+      b.classList.toggle('cur', k === cur);
+      b.classList.toggle('done', k < cur);
+    });
+    $('counter').textContent = `Paso ${cur + 1} de ${steps.length}`;
+    $('btnPrev').disabled = cur === 0;
+    $('btnNext').disabled = cur === steps.length - 1;
+  }
+
+  function renderTrace(s, st) {
+    const full = $('fullTrace').checked;
+    const tb = $('traceBox');
+    tb.innerHTML = lines.map((l, k) => {
+      let cls = 'past';
+      if (s._s != null && k >= s._s && k <= s._e) cls = 'now';
+      else if (k > st.maxE) cls = full ? 'fut' : 'gone';
+      return `<span class="ln ${cls}">${esc(l) || ' '}</span>`;
+    }).join('');
+    const now = tb.querySelector('.now');
+    if (now) tb.scrollTop = Math.max(0, now.offsetTop - tb.offsetTop - 60);
+  }
+
+  function flyPacket(f, dur) {
+    const A = nodeById[f.from], B = nodeById[f.to];
+    const p = document.createElement('div');
+    p.className = 'packet';
+    p.textContent = f.pk || f.label || '';
+    p.style.setProperty('--c', FLOWS[f.k || 'ctx'][1]);
+    stage.appendChild(p);
+    const anim = p.animate([
+      { left: A.x + '%', top: A.y + '%', opacity: 0 },
+      { left: A.x + (B.x - A.x) * .15 + '%', top: A.y + (B.y - A.y) * .15 + '%', opacity: 1, offset: .15 },
+      { left: A.x + (B.x - A.x) * .85 + '%', top: A.y + (B.y - A.y) * .85 + '%', opacity: 1, offset: .85 },
+      { left: B.x + '%', top: B.y + '%', opacity: 0 }
+    ], { duration: dur, easing: 'ease-in-out', fill: 'forwards' });
+    anim.onfinish = () => p.remove();
+  }
+
+  /* ---------- Línea de tiempo ---------- */
+  $('timeline').innerHTML = steps.map((s, i) => `<button class="tl" data-i="${i}" title="${esc(s.title)}" type="button">${esc(s.lbl)}</button>`).join('');
+  document.querySelectorAll('.tl').forEach(b => b.onclick = () => { stop(); go(+b.dataset.i, true); });
+
+  /* ---------- Reproducción ---------- */
+  function readTime(s) {
+    const txt = (s.text || '').replace(/<[^>]+>/g, '').length;
+    const extra = JSON.stringify(s.ctx || '').length * .25 + JSON.stringify(s.out || '').length * .25;
+    const phases = Math.max(0, ...(s.flows || []).map(f => f.ph || 0)) + 1;
+    return Math.min(14000, Math.max(3500, (txt + extra) * 34)) + phases * 1000;
+  }
+  function schedule() {
+    clearTimeout(timer);
+    if (!playing) return;
+    if (cur >= steps.length - 1) { stop(); return; }
+    timer = setTimeout(() => { go(cur + 1, true); schedule(); }, readTime(steps[cur]) / speed());
+  }
+  function play() {
+    if (cur >= steps.length - 1) go(0, false);
+    playing = true; $('btnPlay').textContent = 'Pausa';
+    clearTimeout(timer);
+    timer = setTimeout(() => { go(cur + 1, true); schedule(); }, 400);
+  }
+  function stop() { playing = false; clearTimeout(timer); $('btnPlay').textContent = 'Reproducir'; }
+
+  $('btnPlay').onclick = () => playing ? stop() : play();
+  $('btnNext').onclick = () => { stop(); go(cur + 1, true); };
+  $('btnPrev').onclick = () => { stop(); go(cur - 1, false); };
+  $('btnReset').onclick = () => { stop(); go(0, false); };
+  $('btnReplay').onclick = () => { stop(); go(cur, true); };
+  $('speed').onchange = () => { if (playing) schedule(); };
+  $('fullTrace').onchange = () => renderTrace(steps[cur], stateAt(cur));
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); $('btnNext').click(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); $('btnPrev').click(); }
+    else if (e.key === ' ') { e.preventDefault(); $('btnPlay').click(); }
+  });
+  document.querySelectorAll('.ptab').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.ptab').forEach(x => x.classList.toggle('active', x === b));
+    document.querySelectorAll('.pview').forEach(v => v.classList.toggle('active', v.id === 'view-' + b.dataset.view));
+    if (b.dataset.view === 'trace') renderTrace(steps[cur], stateAt(cur));
+  });
+  $('themeBtn').onclick = () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+  };
+
+  window.__go = go;
+  window.__steps = steps;
+  go(0, false);
+})();
+
+</script>
+</body>
+</html>

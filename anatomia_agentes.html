@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anatomía de agentes</title>
+<style>
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --panel2: #f1f3f6;
+  --border: #d9dee5;
+  --text: #1c2430;
+  --muted: #5f6b7a;
+  --user: #4b6584;
+  --harness: #c2700a;
+  --model: #6d3fd1;
+  --tool: #138a5e;
+  --memory: #0e7f9a;
+  --system: #59636f;
+  --new: #fff4cc;
+  --new-border: #e0b100;
+  --code-bg: #f4f5f8;
+  --shadow: 0 2px 10px rgba(20, 30, 50, .08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --panel: #1a2029; --panel2: #212834; --border: #313a48;
+    --text: #e6eaf0; --muted: #9aa5b4;
+    --user: #8fa9cc; --harness: #f0a541; --model: #a88bf5; --tool: #4cc995;
+    --memory: #4cc3df; --system: #a3adb9;
+    --new: #3b3417; --new-border: #c9a227; --code-bg: #151a22;
+    --shadow: 0 2px 12px rgba(0, 0, 0, .4);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --panel: #1a2029; --panel2: #212834; --border: #313a48;
+  --text: #e6eaf0; --muted: #9aa5b4;
+  --user: #8fa9cc; --harness: #f0a541; --model: #a88bf5; --tool: #4cc995;
+  --memory: #4cc3df; --system: #a3adb9;
+  --new: #3b3417; --new-border: #c9a227; --code-bg: #151a22;
+  --shadow: 0 2px 12px rgba(0, 0, 0, .4);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5; font-size: 15px;
+}
+.wrap { max-width: 1280px; margin: 0 auto; padding: 18px 16px 48px; }
+code, pre, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+
+/* Encabezado */
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+header h1 { font-size: 1.45rem; margin: 0; letter-spacing: -.01em; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 760px; }
+.theme-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: .85rem; }
+
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 12px; }
+.tab {
+  background: var(--panel); border: 1px solid var(--border); color: var(--muted);
+  padding: 9px 14px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: .92rem;
+}
+.tab small { display: block; font-weight: 400; font-size: .75rem; }
+.tab.active { color: var(--text); border-color: var(--text); box-shadow: var(--shadow); }
+
+.case-intro { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; color: var(--muted); font-size: .92rem; }
+.case-intro b { color: var(--text); }
+
+/* Leyenda */
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .8rem; color: var(--muted); margin: 0 0 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+/* Escenario */
+.stage {
+  position: relative; background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+  padding: 18px; box-shadow: var(--shadow);
+}
+.stage svg.links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.links line { stroke: var(--border); stroke-width: 2; }
+.links line.active { stroke: var(--c); stroke-width: 3; stroke-dasharray: 7 6; animation: march .6s linear infinite; }
+@keyframes march { to { stroke-dashoffset: -13; } }
+
+.grid {
+  position: relative; z-index: 1; display: grid; gap: 22px 34px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.1fr) minmax(0, 1.1fr);
+  grid-template-areas: "user harness model" "tools tools tools";
+}
+.node {
+  background: var(--panel); border: 2px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  transition: border-color .25s, box-shadow .25s; min-width: 0;
+}
+.node h3 { margin: 0 0 2px; font-size: .95rem; display: flex; align-items: center; gap: 8px; }
+.node h3 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+.node .role { font-size: .76rem; color: var(--muted); margin-bottom: 8px; }
+.node.on { border-color: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 18%, transparent); }
+.node.pulse { animation: pulse .7s ease-out; }
+@keyframes pulse { 0% { transform: scale(1); } 40% { transform: scale(1.025); } 100% { transform: scale(1); } }
+
+#node-user { grid-area: user; --c: var(--user); align-self: start; }
+#node-harness { grid-area: harness; --c: var(--harness); }
+#node-model { grid-area: model; --c: var(--model); align-self: start; }
+.tools-row { grid-area: tools; display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.tool { --c: var(--tool); flex: 1 1 180px; max-width: 290px; }
+.tool .io { font-size: .76rem; margin-top: 4px; }
+.tool .io div { white-space: pre-wrap; word-break: break-word; }
+.tool .io .lbl { color: var(--muted); font-weight: 600; }
+
+.bubble {
+  background: var(--panel2); border-radius: 10px; padding: 7px 10px; font-size: .82rem; margin-top: 6px;
+  white-space: pre-wrap; word-break: break-word;
+}
+.bubble.final { border-left: 3px solid var(--user); }
+.bubble.out { border-left: 3px solid var(--model); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .76rem; }
+.empty { color: var(--muted); font-size: .8rem; font-style: italic; }
+
+.llm-core {
+  display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; border-radius: 10px;
+  background: color-mix(in srgb, var(--model) 12%, var(--panel)); font-weight: 700; color: var(--model);
+}
+.thinking span { width: 7px; height: 7px; background: var(--model); border-radius: 50%; display: inline-block; animation: blink 1s infinite; }
+.thinking span:nth-child(2) { animation-delay: .2s; } .thinking span:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 100% { opacity: .2; } 50% { opacity: 1; } }
+
+.hstatus { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--panel2); border-radius: 8px; padding: 6px 10px; font-size: .82rem; margin-bottom: 8px; }
+.iter-badge { background: var(--harness); color: var(--panel); border-radius: 6px; padding: 1px 8px; font-weight: 700; font-size: .75rem; }
+.hcols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sub { border: 1.5px dashed var(--border); border-radius: 10px; padding: 8px 10px; min-width: 0; transition: border-color .25s, background .25s; }
+.sub h4 { margin: 0 0 4px; font-size: .8rem; display: flex; align-items: center; gap: 6px; }
+.sub h4 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.sub .txt { font-size: .74rem; color: var(--muted); white-space: pre-wrap; max-height: 150px; overflow: auto; }
+#sub-system { --c: var(--system); }
+#sub-memory { --c: var(--memory); }
+.sub.on { border-style: solid; border-color: var(--c); background: color-mix(in srgb, var(--c) 7%, transparent); }
+.mem-item { font-size: .74rem; background: var(--panel2); border-left: 3px solid var(--memory); border-radius: 6px; padding: 4px 7px; margin-top: 5px; white-space: pre-wrap; word-break: break-word; }
+.mem-item.fresh { animation: slidein .6s ease-out both; animation-delay: var(--delay, 0ms); background: var(--new); }
+@keyframes slidein { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+/* Paquete animado */
+.packet {
+  position: absolute; z-index: 5; left: 0; top: 0; pointer-events: none;
+  background: var(--c); color: var(--panel); font-size: .74rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .25); white-space: nowrap;
+}
+
+/* Controles */
+.controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 14px 0 8px; }
+.btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: .88rem; font-weight: 600; }
+.btn:hover { border-color: var(--text); }
+.btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+.btn:disabled { opacity: .4; cursor: default; }
+select.btn { font-weight: 400; }
+.counter { color: var(--muted); font-size: .85rem; margin-left: auto; }
+.timeline { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: flex-end; margin-bottom: 14px; }
+.tl-group { display: flex; flex-direction: column; gap: 3px; }
+.tl-group .tl-lbl { font-size: .68rem; color: var(--muted); }
+.tl-dots { display: flex; gap: 3px; }
+.tl-dot { width: 22px; height: 10px; border-radius: 3px; border: none; background: var(--c); opacity: .3; cursor: pointer; padding: 0; }
+.tl-dot.done { opacity: .7; }
+.tl-dot.cur { opacity: 1; outline: 2px solid var(--text); outline-offset: 1px; }
+
+/* Paneles inferiores */
+.panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 14px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); min-width: 0; }
+.actor-badge { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--panel); background: var(--c); border-radius: 6px; padding: 2px 8px; }
+.step-title { font-size: 1.12rem; margin: 8px 0 6px; }
+.step-text { margin: 0 0 10px; }
+.step-text p { margin: 0 0 8px; }
+.step-text ul { margin: 0 0 8px; padding-left: 20px; }
+.payload-lbl { font-size: .78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-top: 8px; }
+pre.payload { background: var(--code-bg); border: 1px solid var(--border); border-left: 4px solid var(--c); border-radius: 8px; padding: 10px 12px; font-size: .8rem; white-space: pre-wrap; word-break: break-word; margin: 4px 0 0; }
+
+.ptabs { display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
+.ptab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); padding: 6px 10px; cursor: pointer; font-weight: 600; font-size: .88rem; }
+.ptab.active { color: var(--text); border-bottom-color: var(--text); }
+.pview { display: none; }
+.pview.active { display: block; }
+.seg { border: 1px solid var(--border); border-left: 4px solid var(--c); border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; position: relative; }
+.seg .seg-lbl { font-size: .7rem; font-weight: 700; color: var(--c); text-transform: uppercase; letter-spacing: .04em; }
+.seg pre { margin: 2px 0 0; font-size: .77rem; white-space: pre-wrap; word-break: break-word; }
+.seg.new { background: var(--new); border-color: var(--new-border); border-left-color: var(--c); }
+.seg .new-tag { position: absolute; right: 8px; top: 6px; font-size: .64rem; font-weight: 800; background: var(--new-border); color: #1c1600; border-radius: 4px; padding: 0 6px; }
+.seg.k-system { --c: var(--system); } .seg.k-tools { --c: var(--tool); } .seg.k-user { --c: var(--user); }
+.seg.k-memory { --c: var(--memory); } .seg.k-assistant { --c: var(--model); } .seg.k-ask { --c: var(--harness); }
+.psize { font-size: .8rem; color: var(--muted); margin-top: 8px; }
+.pbar { height: 8px; background: var(--panel2); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+.pbar div { height: 100%; background: var(--harness); transition: width .5s; }
+pre.trace { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: .76rem; max-height: 470px; overflow: auto; white-space: pre-wrap; margin: 0; }
+pre.trace .past { color: var(--muted); }
+pre.trace .now { background: var(--new); color: var(--text); display: block; border-left: 3px solid var(--new-border); padding-left: 6px; }
+
+.notes { margin-top: 14px; }
+.notes h2 { font-size: 1.05rem; margin: 0 0 8px; }
+.notes ul { margin: 0; padding-left: 20px; }
+.notes li { margin-bottom: 5px; }
+table.cmp { width: 100%; border-collapse: collapse; font-size: .85rem; margin-top: 12px; }
+table.cmp th, table.cmp td { border: 1px solid var(--border); padding: 7px 9px; text-align: left; vertical-align: top; }
+table.cmp th { background: var(--panel2); }
+.kbd { font-size: .78rem; color: var(--muted); }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; grid-template-areas: "user" "harness" "model" "tools"; gap: 22px; }
+  .panels { grid-template-columns: 1fr; }
+  .hcols { grid-template-columns: 1fr; }
+  .tool { max-width: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Anatomía de un agente, paso a paso</h1>
+      <p>Qué responde el modelo, qué ejecuta el harness, cómo regresan las observaciones y cómo crece el prompt en cada iteración.</p>
+    </div>
+    <div style="display:flex;gap:8px"><a class="theme-btn" href="index.html" style="text-decoration:none">Índice de demos</a><button class="theme-btn" id="themeBtn" type="button">Tema claro / oscuro</button></div>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+  <div class="case-intro" id="caseIntro"></div>
+
+  <div class="legend">
+    <span><i style="background:var(--user)"></i>Usuario</span>
+    <span><i style="background:var(--harness)"></i>Harness (programa del agente)</span>
+    <span><i style="background:var(--model)"></i>Modelo (LLM)</span>
+    <span><i style="background:var(--tool)"></i>Herramientas</span>
+    <span><i style="background:var(--memory)"></i>Memoria</span>
+    <span><i style="background:var(--system)"></i>Instrucciones</span>
+  </div>
+
+  <section class="stage" id="stage">
+    <svg class="links" id="links"></svg>
+    <div class="grid">
+      <div class="node" id="node-user">
+        <h3><span class="dot"></span>Usuario</h3>
+        <div class="role">Plantea la solicitud y recibe la respuesta final.</div>
+        <div id="userBox"></div>
+      </div>
+
+      <div class="node" id="node-harness">
+        <h3><span class="dot"></span>Harness: el programa del agente</h3>
+        <div class="role">Ejecuta el ciclo: arma el prompt, llama al modelo, lee su respuesta, invoca herramientas y guarda observaciones.</div>
+        <div class="hstatus"><span class="iter-badge" id="iterBadge">Inicio</span><span id="hStatus"></span></div>
+        <div class="hcols">
+          <div class="sub" id="sub-system">
+            <h4><span class="dot"></span><span id="sysTitle">Instrucciones</span></h4>
+            <div class="txt mono" id="sysText"></div>
+          </div>
+          <div class="sub" id="sub-memory">
+            <h4><span class="dot"></span><span id="memTitle">Memoria</span></h4>
+            <div id="memList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="node" id="node-model">
+        <h3><span class="dot"></span>Modelo (LLM)</h3>
+        <div class="role">Recibe texto y devuelve texto. No ejecuta herramientas ni recuerda iteraciones anteriores por sí mismo.</div>
+        <div class="llm-core" id="llmCore">LLM</div>
+        <div id="modelOut"></div>
+      </div>
+
+      <div class="tools-row" id="toolsRow"></div>
+    </div>
+  </section>
+
+  <div class="controls">
+    <button class="btn" id="btnReset" type="button">Reiniciar</button>
+    <button class="btn" id="btnPrev" type="button">Anterior</button>
+    <button class="btn primary" id="btnPlay" type="button">Reproducir</button>
+    <button class="btn" id="btnNext" type="button">Siguiente</button>
+    <select class="btn" id="speed" aria-label="Velocidad">
+      <option value="0.6">Lento</option>
+      <option value="1" selected>Normal</option>
+      <option value="1.7">Rápido</option>
+    </select>
+    <span class="kbd">Teclado: flechas para avanzar o retroceder, espacio para reproducir</span>
+    <span class="counter" id="counter"></span>
+  </div>
+  <div class="timeline" id="timeline"></div>
+
+  <div class="panels">
+    <section class="panel" id="stepPanel">
+      <span class="actor-badge" id="actorBadge"></span>
+      <h2 class="step-title" id="stepTitle"></h2>
+      <div class="step-text" id="stepText"></div>
+      <div id="payloadWrap"></div>
+    </section>
+    <section class="panel">
+      <div class="ptabs">
+        <button class="ptab active" data-view="prompt" type="button">Prompt que recibe el modelo</button>
+        <button class="ptab" data-view="trace" type="button">Trace</button>
+      </div>
+      <div class="pview active" id="view-prompt"></div>
+      <div class="pview" id="view-trace"><pre class="trace" id="traceBox"></pre></div>
+    </section>
+  </div>
+
+  <section class="panel notes" id="notes"></section>
+</div>
+
+<script>
+/* ============================================================
+   Datos de los casos (tomados de los traces en Markdown)
+   ============================================================ */
+
+const ACTORS = {
+  intro:   { name: 'Anatomía', color: 'var(--system)' },
+  user:    { name: 'Usuario', color: 'var(--user)' },
+  harness: { name: 'Ejecuta el harness', color: 'var(--harness)' },
+  model:   { name: 'Responde el modelo', color: 'var(--model)' },
+  tool:    { name: 'Ejecuta la herramienta', color: 'var(--tool)' },
+  memory:  { name: 'Actualiza la memoria', color: 'var(--memory)' }
+};
+
+/* ---------- Caso 1: agente de precios ---------- */
+const P_SYS = `Eres un agente que informa el precio de cualquier producto en la
+divisa que solicite el usuario.
+Para lograrlo, busca el precio del producto; si está en una divisa
+distinta a la solicitada, busca el tipo de cambio entre ambas
+divisas y usa la calculadora para hacer la conversión.
+Herramientas disponibles:
+    - motor de búsqueda: busca información en internet.
+    - calculadora: evalúa operaciones aritméticas.
+En cada paso responde con una de estas dos opciones:
+    Acción: <herramienta>        Entrada: <texto para la herramienta>
+    Acción: objetivo logrado     Respuesta: <respuesta para el usuario>`;
+const P_OBJ = '¿Cuánto cuesta en pesos mexicanos la consola Nintendo Switch 2?';
+const P_OBS = [
+  'Nintendo Switch 2: 449.99 USD en la tienda oficial de Estados Unidos',
+  '1 USD = 18.40 MXN',
+  '8279.816'
+];
+const P_RESP = 'La Nintendo Switch 2 cuesta 449.99 dólares, que equivalen\na unos 8,279.82 pesos mexicanos al tipo de cambio de hoy\n(18.40 pesos por dólar).';
+
+function pPromptText(n) {
+  const obs = n === 0 ? 'Observaciones: ninguna'
+    : 'Observaciones:\n' + P_OBS.slice(0, n).map((o, i) => `    ${i + 1}. ${o}`).join('\n');
+  return `Objetivo: ${P_OBJ}\n${obs}\n¿Cuál es tu siguiente acción?`;
+}
+function pCtx(n) {
+  const segs = [
+    { k: 'system', lbl: 'Instrucciones del sistema (iguales en cada iteración)', text: P_SYS },
+    { k: 'user', lbl: 'Objetivo', text: P_OBJ }
+  ];
+  if (n === 0) segs.push({ k: 'memory', lbl: 'Observaciones', text: 'ninguna' });
+  P_OBS.slice(0, n).forEach((o, i) => segs.push({ k: 'memory', lbl: `Observación ${i + 1}`, text: o, isNew: i === n - 1 }));
+  segs.push({ k: 'ask', lbl: 'Pregunta del harness', text: '¿Cuál es tu siguiente acción?' });
+  return segs;
+}
+
+const P_ITERS = [
+  { tool: 'buscador', toolName: 'motor de búsqueda', input: 'precio Nintendo Switch 2 en dólares',
+    obs: 'Nintendo Switch 2: 449.99 USD en la tienda oficial\nde Estados Unidos', memText: 'Nintendo Switch 2: 449.99 USD',
+    why: 'Con cero observaciones, lo primero que necesita es el precio del producto.' },
+  { tool: 'buscador', toolName: 'motor de búsqueda', input: 'tipo de cambio dólar a peso mexicano hoy',
+    obs: '1 USD = 18.40 MXN', memText: '1 USD = 18.40 MXN',
+    why: 'La observación 1 dice que el precio está en dólares, una divisa distinta a la solicitada. Las instrucciones le indican buscar el tipo de cambio. Usa la misma herramienta con otro propósito.' },
+  { tool: 'calc', toolName: 'calculadora', input: '449.99 × 18.40',
+    obs: '8279.816', memText: '8279.816',
+    why: 'Ya tiene precio y tipo de cambio en sus observaciones. No hace la multiplicación por su cuenta: pide a la calculadora que la haga.' }
+];
+
+function buildPrecios() {
+  const s = [];
+  s.push({
+    actor: 'intro', title: 'Las piezas del agente de precios',
+    text: `<p>Antes de ejecutar nada, el agente ya tiene cinco piezas:</p>
+<ul>
+<li><b>Modelo (LLM):</b> decide la siguiente acción. Solo produce texto.</li>
+<li><b>Harness:</b> el programa que corre el ciclo, llama al modelo y ejecuta las herramientas.</li>
+<li><b>Instrucciones del sistema:</b> le dicen al modelo qué herramientas existen y en qué formato responder.</li>
+<li><b>Memoria:</b> la lista de observaciones acumuladas. Empieza vacía.</li>
+<li><b>Herramientas:</b> un motor de búsqueda y una calculadora.</li>
+</ul>
+<p>El precio y el tipo de cambio son valores ilustrativos para la simulación.</p>`,
+    status: 'Esperando el objetivo del usuario', iter: 'Inicio',
+    trace: `OBJETIVO: "${P_OBJ}"\nHERRAMIENTAS: motor de búsqueda, calculadora\nOBSERVACIONES: ninguna\n`,
+    hl: ['sub-system', 'sub-memory']
+  });
+  s.push({
+    actor: 'user', from: 'user', to: 'harness', packet: 'Objetivo',
+    title: 'El usuario plantea el objetivo',
+    text: '<p>El usuario escribe su pregunta. El harness la guarda como <b>objetivo</b> y arranca el ciclo con la memoria vacía.</p>',
+    payloadLbl: 'Objetivo', payload: P_OBJ,
+    userMsg: P_OBJ, status: 'Objetivo recibido. Observaciones: ninguna', iter: 'Inicio'
+  });
+  P_ITERS.forEach((it, i) => {
+    const n = i + 1;
+    s.push({
+      actor: 'harness', from: 'harness', to: 'model', packet: 'Prompt',
+      title: `Iteración ${n}: el harness arma el prompt y llama al modelo`,
+      text: n === 1
+        ? '<p>El harness une las instrucciones del sistema, el objetivo y las observaciones (por ahora ninguna) en un solo prompt y lo envía al LLM.</p>'
+        : `<p>El harness vuelve a enviar las mismas instrucciones y el mismo objetivo, ahora con ${i} observación${i > 1 ? 'es' : ''} en la lista. El prompt crece: la lista de observaciones es lo único que el modelo "recuerda" de los pasos anteriores.</p>`,
+      payloadLbl: 'Prompt al LLM', payload: pPromptText(i),
+      ctx: pCtx(i), thinking: true, status: 'Esperando la respuesta del modelo', iter: `Iteración ${n}`,
+      trace: `\nITERACIÓN ${n}\n    El LLM analiza el objetivo y las observaciones.\n`,
+      hl: ['sub-system', 'sub-memory']
+    });
+    s.push({
+      actor: 'model', from: 'model', to: 'harness', packet: 'Texto',
+      title: `Iteración ${n}: el modelo responde con una acción`,
+      text: `<p>${it.why}</p><p>El modelo no ejecuta la herramienta: escribe texto con el formato que pidieron las instrucciones.</p>`,
+      payloadLbl: 'Respuesta del LLM', payload: `Acción:       ${it.toolName}\nEntrada:      ${it.input}`,
+      modelOut: `Acción: ${it.toolName}\nEntrada: ${it.input}`, status: 'Respuesta recibida', iter: `Iteración ${n}`,
+      trace: `        Acción:       usar la herramienta ${it.toolName}\n        Entrada:      ${it.input}\n`
+    });
+    s.push({
+      actor: 'harness', from: 'harness', to: 'tool:' + it.tool, packet: 'Invocación',
+      title: `Iteración ${n}: el harness lee la acción e invoca la herramienta`,
+      text: `<p>El harness busca en el texto la línea <code>Acción:</code>, encuentra "${it.toolName}" y le pasa el contenido de <code>Entrada:</code>. Esta llamada la hace el programa, no el modelo.</p>`,
+      payloadLbl: 'Invocación del harness', payload: `${it.toolName}("${it.input}")`,
+      toolIO: { id: it.tool, input: it.input }, status: `Ejecutando ${it.toolName}`, iter: `Iteración ${n}`,
+      trace: `    Se ejecuta ${it.tool === 'calc' ? 'la calculadora' : 'el motor de búsqueda'}.\n`
+    });
+    s.push({
+      actor: 'tool', from: 'tool:' + it.tool, to: 'harness', packet: 'Observación',
+      title: `Iteración ${n}: la observación regresa y se guarda en memoria`,
+      text: `<p>La herramienta devuelve su resultado. El harness lo agrega a la lista de observaciones y revisa si el modelo declaró el objetivo logrado. No lo hizo, así que se repite el ciclo.</p>`,
+      payloadLbl: 'Observación', payload: it.obs,
+      toolIO: { id: it.tool, input: it.input, output: it.obs },
+      memAdd: it.memText, status: '¿Objetivo logrado? No. Se repite el ciclo.', iter: `Iteración ${n}`,
+      trace: `        Observación:  ${it.obs.replace('\n', '\n                      ')}\n    Observaciones: [${P_ITERS.slice(0, n).map(x => /^\d+\.\d+$/.test(x.memText) ? x.memText : '"' + x.memText + '"').join(', ')}]\n    ¿Objetivo logrado? No. Se repite el ciclo.\n`,
+      hl: ['sub-memory']
+    });
+  });
+  s.push({
+    actor: 'harness', from: 'harness', to: 'model', packet: 'Prompt',
+    title: 'Iteración 4: el harness envía el prompt con tres observaciones',
+    text: '<p>Mismas instrucciones, mismo objetivo y ahora tres observaciones: precio, tipo de cambio y resultado de la multiplicación.</p>',
+    payloadLbl: 'Prompt al LLM', payload: pPromptText(3),
+    ctx: pCtx(3), thinking: true, status: 'Esperando la respuesta del modelo', iter: 'Iteración 4',
+    trace: '\nITERACIÓN 4\n    El LLM analiza el objetivo y las observaciones.\n', hl: ['sub-system', 'sub-memory']
+  });
+  s.push({
+    actor: 'model', from: 'model', to: 'harness', packet: 'Texto',
+    title: 'Iteración 4: el modelo declara el objetivo logrado',
+    text: '<p>Con todos los datos en sus observaciones, el modelo elige la segunda opción del formato: <code>objetivo logrado</code> y redacta la respuesta.</p><p>También aporta criterio: redondea 8279.816 a dos decimales para presentarlo como una cantidad en pesos.</p>',
+    payloadLbl: 'Respuesta del LLM', payload: `Acción:       objetivo logrado\nRespuesta:    ${P_RESP.replace(/\n/g, '\n              ')}`,
+    modelOut: `Acción: objetivo logrado\nRespuesta: ${P_RESP.replace(/\n/g, ' ')}`, status: 'Respuesta recibida', iter: 'Iteración 4',
+    trace: `        Acción:       objetivo logrado\n        Respuesta:    ${P_RESP.replace(/\n/g, '\n                      ')}\n`
+  });
+  s.push({
+    actor: 'harness', from: 'harness', to: 'user', packet: 'Respuesta final',
+    title: 'El harness termina el ciclo y entrega la respuesta',
+    text: '<p>El harness lee <code>Acción: objetivo logrado</code>, detiene el ciclo y entrega al usuario el texto de <code>Respuesta:</code>.</p><p>Resumen: 4 llamadas al modelo, 3 invocaciones de herramientas, 3 observaciones en memoria.</p>',
+    payloadLbl: 'Respuesta final', payload: 'La Nintendo Switch 2 cuesta 449.99 dólares, que equivalen a unos\n8,279.82 pesos mexicanos al tipo de cambio de hoy.',
+    userAnswer: 'La Nintendo Switch 2 cuesta 449.99 dólares, que equivalen a unos 8,279.82 pesos mexicanos al tipo de cambio de hoy.',
+    status: '¿Objetivo logrado? Sí. Termina el ciclo.', iter: 'Fin',
+    trace: '    ¿Objetivo logrado? Sí. Termina el ciclo.\n\nRESPUESTA FINAL\n    La Nintendo Switch 2 cuesta 449.99 dólares, que equivalen a unos\n    8,279.82 pesos mexicanos al tipo de cambio de hoy.\n'
+  });
+  return s;
+}
+
+/* ---------- Caso 2: Function Calling ---------- */
+const FC_FUNCS = `consultar_pedido(id_pedido: texto)
+    Devuelve el estado, la paquetería y la fecha estimada de entrega.
+cancelar_suscripcion(id_cliente: texto)
+    Cancela la suscripción activa del cliente.`;
+const FC_MSG = 'Hola, ¿me dicen dónde viene mi pedido 48213?';
+const FC_CALL = `{
+  "nombre": "consultar_pedido",
+  "argumentos": { "id_pedido": "48213" }
+}`;
+const FC_RES = `{
+  "estado": "en tránsito",
+  "paqueteria": "Envíos del Norte",
+  "entrega_estimada": "2026-09-25"
+}`;
+const FC_RESP = 'Tu pedido 48213 va en camino con Envíos del Norte y la entrega\nestimada es el viernes 25 de septiembre.';
+
+function buildFC() {
+  const base = [
+    { k: 'tools', lbl: 'Funciones disponibles (se envían junto con el mensaje)', text: FC_FUNCS },
+    { k: 'user', lbl: 'Mensaje del usuario', text: FC_MSG }
+  ];
+  return [
+    {
+      actor: 'intro', title: 'Las piezas de un agente con Function Calling',
+      text: `<p>Caso: un asistente de servicio al cliente recibe una consulta estructurada.</p>
+<ul>
+<li><b>Modelo (LLM):</b> reconoce la intención y devuelve una llamada a función en JSON.</li>
+<li><b>Harness:</b> envía las definiciones de funciones, ejecuta la función en el CRM y regresa el resultado al modelo.</li>
+<li><b>Funciones disponibles:</b> cada una con nombre, parámetros y una breve descripción.</li>
+<li><b>Memoria:</b> los mensajes de la conversación, incluida la llamada y su resultado.</li>
+<li><b>Herramientas:</b> dos funciones del CRM.</li>
+</ul>
+<p>Todo ocurre en un solo paso y sin razonamiento intermedio visible.</p>`,
+      status: 'Esperando el mensaje del usuario', iter: 'Inicio',
+      trace: 'FUNCIONES DISPONIBLES (se envían al LLM junto con el mensaje)\n' + FC_FUNCS.replace(/^/gm, '    ') + '\n',
+      hl: ['sub-system']
+    },
+    {
+      actor: 'user', from: 'user', to: 'harness', packet: 'Mensaje',
+      title: 'El usuario pregunta por su pedido',
+      text: '<p>Es una consulta estructurada: la intención (consultar un pedido) y el dato necesario (el número de pedido) vienen en el mensaje.</p>',
+      payloadLbl: 'Mensaje del usuario', payload: FC_MSG,
+      userMsg: FC_MSG, memAdd: 'usuario: ' + FC_MSG, status: 'Mensaje recibido', iter: 'Inicio',
+      trace: `\nMENSAJE DEL USUARIO\n    "${FC_MSG}"\n`
+    },
+    {
+      actor: 'harness', from: 'harness', to: 'model', packet: 'Mensaje + funciones',
+      title: 'El harness envía el mensaje y las definiciones de funciones',
+      text: '<p>Al LLM se le envían, junto con el mensaje, las definiciones de las funciones disponibles. Con esas definiciones el modelo sabe qué puede pedir y con qué parámetros.</p>',
+      payloadLbl: 'Lo que recibe el LLM', payload: 'FUNCIONES DISPONIBLES\n' + FC_FUNCS + '\n\nMENSAJE DEL USUARIO\n' + FC_MSG,
+      ctx: base, thinking: true, status: 'Esperando la respuesta del modelo', iter: 'Paso 1',
+      hl: ['sub-system', 'sub-memory']
+    },
+    {
+      actor: 'model', from: 'model', to: 'harness', packet: 'JSON',
+      title: 'Paso 1: el LLM identifica la intención y elige la función',
+      text: '<p>El LLM reconoce que la intención corresponde a <code>consultar_pedido</code>, extrae el número de pedido del mensaje y devuelve la llamada en formato JSON.</p><p>No hay un "Pensamiento" visible: el razonamiento queda implícito. El JSON sigue el esquema de la función, así que es fácil de validar.</p>',
+      payloadLbl: 'Llamada a función', payload: FC_CALL,
+      modelOut: 'consultar_pedido({ "id_pedido": "48213" })', status: 'Llamada a función recibida', iter: 'Paso 1',
+      trace: '\nPASO 1: EL LLM IDENTIFICA LA INTENCIÓN Y ELIGE LA FUNCIÓN\n    Llamada a función:\n' + FC_CALL.replace(/^/gm, '        ') + '\n'
+    },
+    {
+      actor: 'harness', from: 'harness', to: 'tool:pedido', packet: 'Invocación',
+      title: 'Paso 2: el programa ejecuta la función en el CRM',
+      text: '<p>El harness valida el JSON contra la definición de la función y ejecuta <code>consultar_pedido</code> con <code>id_pedido = "48213"</code>. El modelo no tiene acceso al CRM; el programa sí.</p>',
+      payloadLbl: 'Invocación del harness', payload: 'consultar_pedido(id_pedido = "48213")',
+      toolIO: { id: 'pedido', input: 'id_pedido = "48213"' }, memAdd: 'asistente: llamada a consultar_pedido("48213")',
+      status: 'Ejecutando consultar_pedido', iter: 'Paso 2',
+      trace: '\nPASO 2: EL PROGRAMA EJECUTA LA FUNCIÓN EN EL CRM\n'
+    },
+    {
+      actor: 'tool', from: 'tool:pedido', to: 'harness', packet: 'Resultado',
+      title: 'Paso 2: el CRM regresa el resultado',
+      text: '<p>La función devuelve un JSON con el estado, la paquetería y la fecha estimada. El harness lo agrega a la conversación como resultado de la función.</p>',
+      payloadLbl: 'Resultado', payload: FC_RES,
+      toolIO: { id: 'pedido', input: 'id_pedido = "48213"', output: 'en tránsito, Envíos del Norte, 2026-09-25' },
+      memAdd: 'resultado: en tránsito, Envíos del Norte, 2026-09-25', status: 'Resultado recibido', iter: 'Paso 2',
+      trace: '    Resultado:\n' + FC_RES.replace(/^/gm, '        ') + '\n', hl: ['sub-memory']
+    },
+    {
+      actor: 'harness', from: 'harness', to: 'model', packet: 'Resultado',
+      title: 'El harness entrega el resultado al LLM',
+      text: '<p>El programa le entrega el resultado al LLM junto con la conversación previa: el mensaje, la llamada que el propio modelo pidió y lo que regresó el CRM.</p>',
+      payloadLbl: 'Lo nuevo en el prompt', payload: 'Llamada a función:\n' + FC_CALL + '\n\nResultado:\n' + FC_RES,
+      ctx: base.concat([
+        { k: 'assistant', lbl: 'Llamada a función (respuesta anterior del LLM)', text: FC_CALL, isNew: true },
+        { k: 'memory', lbl: 'Resultado de la función', text: FC_RES, isNew: true }
+      ]),
+      thinking: true, status: 'Esperando la respuesta del modelo', iter: 'Paso 3', hl: ['sub-memory']
+    },
+    {
+      actor: 'model', from: 'model', to: 'harness', packet: 'Texto',
+      title: 'Paso 3: el LLM redacta la respuesta',
+      text: '<p>El LLM convierte el JSON en una respuesta clara para el usuario: traduce "en tránsito" a "va en camino" y la fecha 2026-09-25 a "el viernes 25 de septiembre".</p>',
+      payloadLbl: 'Respuesta final', payload: FC_RESP,
+      modelOut: FC_RESP.replace(/\n/g, ' '), status: 'Respuesta recibida', iter: 'Paso 3',
+      trace: '\nPASO 3: EL LLM REDACTA LA RESPUESTA\n    Respuesta final:\n' + FC_RESP.replace(/^/gm, '        ') + '\n'
+    },
+    {
+      actor: 'harness', from: 'harness', to: 'user', packet: 'Respuesta final',
+      title: 'El harness entrega la respuesta al usuario',
+      text: '<p>La respuesta del modelo ya no contiene una llamada a función, así que el harness la entrega al usuario y termina.</p><p>Resumen: 2 llamadas al modelo, 1 invocación de función. La intención se tradujo directamente en una llamada.</p>',
+      userAnswer: FC_RESP.replace(/\n/g, ' '), status: 'Terminado', iter: 'Fin'
+    }
+  ];
+}
+
+/* ---------- Caso 3: ReAct ---------- */
+const R_TOOLS = `consultar_pagos(id_cliente, mes)
+consultar_historial_cuenta(id_cliente)
+buscar_base_conocimiento(consulta)
+solicitar_reembolso(id_pago, monto, motivo)`;
+const R_FORMAT = 'En cada iteración: escribe un Pensamiento sobre lo que sabes hasta el momento\ny elige una Acción. El programa agrega la Observación que regresa la herramienta.';
+const R_MSG = 'Me cobraron dos veces la suscripción este mes. Esto es inaceptable,\nquiero una solución.';
+const R_ITERS = [
+  { tool: 'pagos',
+    thought: 'El cliente reporta un doble cobro. Primero verifico sus\npagos de septiembre para confirmarlo.',
+    action: 'consultar_pagos(id_cliente = "C-1027", mes = "septiembre 2026")',
+    obs: 'P-88310   1 sep   $199 MXN   Suscripción Premium   tarjeta ...4411\nP-88342   3 sep   $199 MXN   Suscripción Premium   tarjeta ...8830',
+    note: 'Con solo el mensaje del cliente, el modelo razona que primero hay que confirmar el problema.' },
+  { tool: 'historial',
+    thought: 'Hay dos cargos por el mismo periodo, con tarjetas\ndistintas. Reviso el historial de la cuenta para\nentender por qué.',
+    action: 'consultar_historial_cuenta(id_cliente = "C-1027")',
+    obs: '2 sep: el cliente cambió su método de pago a la tarjeta ...8830\n3 sep: el sistema cobró la suscripción con el nuevo método',
+    note: 'La observación anterior cambia el plan: dos tarjetas distintas llevan al modelo a revisar el historial. Esta acción no estaba decidida de antemano.' },
+  { tool: 'kb',
+    thought: 'Al cambiar la tarjeta, el sistema parece haber cobrado\nde nuevo un periodo ya pagado. Busco si es un error\nconocido y qué indica la política.',
+    action: 'buscar_base_conocimiento("cobro duplicado al cambiar método de pago")',
+    obs: '"Error conocido #312: al actualizar el método de pago, el\nsistema puede cobrar de nuevo el periodo en curso. Procede\nel reembolso completo del segundo cargo; se refleja en 5 a\n10 días hábiles."',
+    note: 'El modelo formula una hipótesis sobre la causa y decide verificarla en la base de conocimiento.' },
+  { tool: 'reembolso',
+    thought: 'El caso coincide con el error #312. Procede reembolsar\nel segundo cargo.',
+    action: 'solicitar_reembolso(id_pago = "P-88342", monto = 199,\n                    motivo = "Cargo duplicado, error #312")',
+    obs: '"Reembolso R-5521 creado. Se reflejará en 5 a 10 días hábiles."',
+    note: 'Con la causa confirmada, el modelo elige la acción que resuelve el problema. Toma el id_pago P-88342 de la observación de la iteración 1.' }
+];
+const R_FINAL_T = 'Ya confirmé el problema, identifiqué la causa y generé el\nreembolso. Puedo responder al cliente.';
+const R_FINAL = 'Tienes razón, se te cobró dos veces la suscripción de septiembre.\nOcurrió por un error de nuestro sistema al actualizar tu método de\npago el 2 de septiembre. Ya generamos el reembolso del segundo\ncargo ($199 MXN, folio R-5521), que verás reflejado en 5 a 10 días\nhábiles. Lamentamos la molestia.';
+const R_TOOLNAMES = { pagos: 'consultar_pagos', historial: 'consultar_historial_cuenta', kb: 'buscar_base_conocimiento', reembolso: 'solicitar_reembolso' };
+
+function rStepText(it) {
+  return `Pensamiento:  ${it.thought.replace(/\n/g, '\n              ')}\nAcción:       ${it.action}\nObservación:  ${it.obs.replace(/\n/g, '\n              ')}`;
+}
+function rCtx(n) {
+  const segs = [
+    { k: 'tools', lbl: 'Herramientas disponibles', text: R_TOOLS },
+    { k: 'system', lbl: 'Formato del ciclo ReAct', text: R_FORMAT },
+    { k: 'user', lbl: 'Mensaje del usuario (cliente C-1027)', text: R_MSG }
+  ];
+  R_ITERS.slice(0, n).forEach((it, i) => segs.push({ k: 'memory', lbl: `Iteración ${i + 1}: pensamiento, acción y observación`, text: rStepText(it), isNew: i === n - 1 }));
+  return segs;
+}
+
+function buildReact() {
+  const s = [];
+  s.push({
+    actor: 'intro', title: 'Las piezas de un agente ReAct',
+    text: `<p>Caso: el mismo asistente de servicio al cliente recibe una queja abierta. No basta con invocar una función: hay que confirmar el problema, averiguar la causa y decidir la solución.</p>
+<ul>
+<li><b>Modelo (LLM):</b> en cada iteración escribe un <b>Pensamiento</b> y elige una <b>Acción</b>.</li>
+<li><b>Harness:</b> ejecuta la acción, captura la <b>Observación</b> y la agrega al historial.</li>
+<li><b>Memoria:</b> el historial de pensamientos, acciones y observaciones. Cada observación orienta el siguiente paso.</li>
+<li><b>Herramientas:</b> cuatro funciones de pagos, cuenta, base de conocimiento y reembolsos.</li>
+</ul>`,
+    status: 'Esperando el mensaje del usuario', iter: 'Inicio',
+    trace: 'HERRAMIENTAS DISPONIBLES\n' + R_TOOLS.replace(/^/gm, '    ') + '\n', hl: ['sub-system']
+  });
+  s.push({
+    actor: 'user', from: 'user', to: 'harness', packet: 'Queja',
+    title: 'El cliente C-1027 envía una queja',
+    text: '<p>La queja no dice qué consultar ni en qué orden. El agente no sabe de antemano cuántas consultas necesitará.</p>',
+    payloadLbl: 'Mensaje del usuario', payload: R_MSG,
+    userMsg: R_MSG.replace(/\n/g, ' '), status: 'Mensaje recibido', iter: 'Inicio',
+    trace: `\nMENSAJE DEL USUARIO (cliente C-1027)\n    "${R_MSG.replace(/\n/g, '\n    ')}"\n`
+  });
+  R_ITERS.forEach((it, i) => {
+    const n = i + 1, tn = R_TOOLNAMES[it.tool];
+    s.push({
+      actor: 'harness', from: 'harness', to: 'model', packet: 'Prompt',
+      title: `Iteración ${n}: el harness envía el historial al modelo`,
+      text: n === 1
+        ? '<p>El harness envía las herramientas, el formato del ciclo y el mensaje del cliente. El historial todavía está vacío.</p>'
+        : `<p>El harness reenvía todo lo anterior más el bloque de la iteración ${i}: su pensamiento, su acción y la observación que regresó.</p>`,
+      payloadLbl: 'Lo nuevo en el prompt', payload: n === 1 ? R_MSG : rStepText(R_ITERS[i - 1]),
+      ctx: rCtx(i), thinking: true, status: 'Esperando la respuesta del modelo', iter: `Iteración ${n}`,
+      trace: `\nITERACIÓN ${n}\n`, hl: ['sub-system', 'sub-memory']
+    });
+    s.push({
+      actor: 'model', from: 'model', to: 'harness', packet: 'Pensamiento + Acción',
+      title: `Iteración ${n}: el modelo piensa y elige una acción`,
+      text: `<p>${it.note}</p><p>El razonamiento es explícito: el Pensamiento queda escrito antes de la Acción.</p>`,
+      payloadLbl: 'Respuesta del LLM', payload: `Pensamiento:  ${it.thought.replace(/\n/g, '\n              ')}\nAcción:       ${it.action}`,
+      modelOut: `Pensamiento: ${it.thought.replace(/\n/g, ' ')}\nAcción: ${it.action.replace(/\s*\n\s*/g, ' ')}`,
+      status: 'Respuesta recibida', iter: `Iteración ${n}`,
+      trace: `    Pensamiento:  ${it.thought.replace(/\n/g, '\n                  ')}\n    Acción:       ${it.action.replace(/\n/g, '\n                  ')}\n`
+    });
+    s.push({
+      actor: 'harness', from: 'harness', to: 'tool:' + it.tool, packet: 'Invocación',
+      title: `Iteración ${n}: el harness ejecuta ${tn}`,
+      text: `<p>El harness lee la línea <code>Acción:</code>, identifica la herramienta <code>${tn}</code> con sus argumentos y la ejecuta. Muchos agentes ReAct usan function calling como mecanismo para esta invocación.</p>`,
+      payloadLbl: 'Invocación del harness', payload: it.action,
+      toolIO: { id: it.tool, input: it.action.replace(/^[a-z_]+\(|\)$/g, '').replace(/\s*\n\s*/g, ' ') },
+      status: `Ejecutando ${tn}`, iter: `Iteración ${n}`
+    });
+    s.push({
+      actor: 'tool', from: 'tool:' + it.tool, to: 'harness', packet: 'Observación',
+      title: `Iteración ${n}: la observación regresa al historial`,
+      text: `<p>La herramienta responde y el harness guarda el bloque completo (pensamiento, acción y observación) en el historial que verá el modelo en la siguiente iteración.</p>`,
+      payloadLbl: 'Observación', payload: it.obs,
+      toolIO: { id: it.tool, input: it.action.replace(/^[a-z_]+\(|\)$/g, '').replace(/\s*\n\s*/g, ' '), output: it.obs },
+      memAdd: `${n}. ${tn}\n${it.obs.split('\n')[0]}${it.obs.includes('\n') ? ' ...' : ''}`,
+      status: 'Sin respuesta final. Siguiente iteración.', iter: `Iteración ${n}`,
+      trace: `    Observación:  ${it.obs.replace(/\n/g, '\n                  ')}\n`, hl: ['sub-memory']
+    });
+  });
+  s.push({
+    actor: 'harness', from: 'harness', to: 'model', packet: 'Prompt',
+    title: 'Iteración 5: el harness envía el historial completo',
+    text: '<p>El prompt ya contiene cuatro bloques de pensamiento, acción y observación. Es el prompt más largo de todo el caso.</p>',
+    payloadLbl: 'Lo nuevo en el prompt', payload: rStepText(R_ITERS[3]),
+    ctx: rCtx(4), thinking: true, status: 'Esperando la respuesta del modelo', iter: 'Iteración 5',
+    trace: '\nITERACIÓN 5\n', hl: ['sub-system', 'sub-memory']
+  });
+  s.push({
+    actor: 'model', from: 'model', to: 'harness', packet: 'Respuesta final',
+    title: 'Iteración 5: el modelo decide que ya puede responder',
+    text: '<p>En lugar de una Acción, el modelo escribe una <b>Respuesta final</b>: la causa del problema y la solución, con datos tomados de las observaciones (fecha del cambio, monto, folio R-5521, plazo de 5 a 10 días).</p>',
+    payloadLbl: 'Respuesta del LLM', payload: `Pensamiento:  ${R_FINAL_T.replace(/\n/g, '\n              ')}\nRespuesta final:\n${R_FINAL}`,
+    modelOut: `Pensamiento: ${R_FINAL_T.replace(/\n/g, ' ')}\nRespuesta final: ...`, status: 'Respuesta final detectada', iter: 'Iteración 5',
+    trace: `    Pensamiento:  ${R_FINAL_T.replace(/\n/g, '\n                  ')}\n    Respuesta final:\n${R_FINAL.replace(/^/gm, '        ')}\n`
+  });
+  s.push({
+    actor: 'harness', from: 'harness', to: 'user', packet: 'Respuesta final',
+    title: 'El harness entrega la respuesta al cliente',
+    text: '<p>El harness detecta "Respuesta final", termina el ciclo y la entrega.</p><p>Resumen: 5 llamadas al modelo, 4 invocaciones de herramientas. Cada observación cambió el siguiente paso.</p>',
+    userAnswer: R_FINAL.replace(/\n/g, ' '), status: 'Terminado', iter: 'Fin'
+  });
+  return s;
+}
+
+const COMPARE = `<table class="cmp">
+<thead><tr><th>Aspecto</th><th>Function Calling</th><th>ReAct</th></tr></thead>
+<tbody>
+<tr><td>Pasos</td><td>Uno: la intención se traduce directamente en una llamada</td><td>Varios: el agente no sabe de antemano cuántas consultas necesitará</td></tr>
+<tr><td>Razonamiento</td><td>Implícito, no se muestra</td><td>Explícito: un <i>Pensamiento</i> antes de cada acción</td></tr>
+<tr><td>Formato de la acción</td><td>JSON con argumentos definidos por un esquema, fácil de validar</td><td>Acción elegida tras razonar sobre las observaciones previas</td></tr>
+<tr><td>Papel de las observaciones</td><td>El resultado se usa para redactar la respuesta</td><td>Cada observación cambia el siguiente paso (dos tarjetas distintas llevan a revisar el historial)</td></tr>
+<tr><td>Caso ideal</td><td>Consultas estructuradas: estado de pedido, cancelación</td><td>Quejas abiertas: analizar, encontrar la causa, consultar varias fuentes</td></tr>
+</tbody></table>
+<p style="margin-top:10px">En la práctica no son excluyentes: muchos agentes ReAct usan function calling como mecanismo para invocar sus herramientas; lo que distingue a ReAct es el ciclo de razonamiento explícito alrededor de esas llamadas.</p>`;
+
+const CASES = {
+  precios: {
+    tab: 'Agente de precios', sub: 'Ciclo básico: acción y observación',
+    intro: '<b>Agente de precios.</b> Informa el precio de un producto en la divisa que indique el usuario. Tiene un motor de búsqueda y una calculadora. En cada iteración, el programa del agente envía al LLM un prompt con el objetivo y las observaciones acumuladas, y el LLM responde con la siguiente acción.',
+    sysTitle: 'Instrucciones del sistema', sysText: P_SYS, memTitle: 'Memoria: observaciones',
+    tools: [
+      { id: 'buscador', name: 'Motor de búsqueda', desc: 'Busca información en internet.' },
+      { id: 'calc', name: 'Calculadora', desc: 'Evalúa operaciones aritméticas.' }
+    ],
+    build: buildPrecios,
+    notes: `<h2>Qué observar en este caso</h2><ul>
+<li><b>La misma herramienta, dos propósitos.</b> El agente usa el motor de búsqueda dos veces: primero para el precio y después para el tipo de cambio.</li>
+<li><b>Las instrucciones del sistema no cambian.</b> Le dicen al LLM qué herramientas tiene y en qué formato responder, para que el programa pueda leer su respuesta y ejecutar la herramienta indicada.</li>
+<li><b>El prompt crece en cada iteración.</b> La lista de observaciones es lo único que el LLM "recuerda" de los pasos anteriores.</li>
+<li><b>El LLM nunca ejecuta nada.</b> Solo responde con texto; el programa del agente lee "Acción: calculadora", llama a la herramienta y agrega el resultado al siguiente prompt.</li>
+<li><b>El LLM también aporta criterio.</b> Redondea el resultado de la calculadora a dos decimales para presentarlo como una cantidad en pesos.</li>
+</ul>`
+  },
+  fc: {
+    tab: 'Function Calling', sub: 'Estado de un pedido',
+    intro: '<b>Function Calling (FC).</b> Un usuario pregunta dónde viene su pedido. Como es una consulta estructurada, el asistente reconoce la intención, invoca la función del CRM y devuelve el resultado.',
+    sysTitle: 'Funciones disponibles', sysText: FC_FUNCS, memTitle: 'Memoria: mensajes',
+    tools: [
+      { id: 'pedido', name: 'consultar_pedido', desc: 'CRM: estado, paquetería y fecha estimada de entrega.' },
+      { id: 'cancelar', name: 'cancelar_suscripcion', desc: 'CRM: cancela la suscripción activa del cliente.' }
+    ],
+    build: buildFC,
+    notes: '<h2>Function Calling vs. ReAct</h2><p>FC resuelve en un solo paso lo que ya está estructurado; ReAct encadena varios pasos cuando el agente tiene que averiguar qué hacer.</p>' + COMPARE
+  },
+  react: {
+    tab: 'ReAct', sub: 'Queja por cobro duplicado',
+    intro: '<b>ReAct.</b> Un usuario se queja de que le cobraron dos veces su suscripción. El asistente tiene que confirmar el problema, averiguar la causa y decidir qué solución corresponde. En cada iteración el LLM escribe un pensamiento, elige una acción y recibe una observación que orienta el siguiente paso.',
+    sysTitle: 'Herramientas y formato', sysText: R_TOOLS + '\n\n' + R_FORMAT, memTitle: 'Memoria: historial ReAct',
+    tools: [
+      { id: 'pagos', name: 'consultar_pagos', desc: 'Pagos del cliente en un mes.' },
+      { id: 'historial', name: 'consultar_historial_cuenta', desc: 'Cambios en la cuenta del cliente.' },
+      { id: 'kb', name: 'buscar_base_conocimiento', desc: 'Errores conocidos y políticas.' },
+      { id: 'reembolso', name: 'solicitar_reembolso', desc: 'Crea un reembolso para un pago.' }
+    ],
+    build: buildReact,
+    notes: '<h2>Function Calling vs. ReAct</h2><p>FC resuelve en un solo paso lo que ya está estructurado; ReAct encadena varios pasos cuando el agente tiene que averiguar qué hacer.</p>' + COMPARE
+  }
+};
+
+/* ============================================================
+   Motor de la aplicación
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+let caseId = 'precios', steps = [], cur = 0, playing = false, timer = null, maxCtx = 1;
+
+function tabsRender() {
+  $('tabs').innerHTML = Object.entries(CASES).map(([id, c]) =>
+    `<button class="tab${id === caseId ? ' active' : ''}" data-case="${id}" type="button">${c.tab}<small>${c.sub}</small></button>`).join('');
+  $('tabs').querySelectorAll('.tab').forEach(b => b.onclick = () => loadCase(b.dataset.case));
+}
+
+function loadCase(id) {
+  stop();
+  caseId = CASES[id] ? id : 'precios';
+  try { history.replaceState(null, '', '#' + caseId); } catch (e) {}
+  const c = CASES[caseId];
+  steps = c.build();
+  maxCtx = Math.max(1, ...steps.filter(s => s.ctx).map(s => ctxLen(s.ctx)));
+  tabsRender();
+  $('caseIntro').innerHTML = c.intro;
+  $('sysTitle').textContent = c.sysTitle;
+  $('sysText').textContent = c.sysText;
+  $('memTitle').textContent = c.memTitle;
+  $('toolsRow').innerHTML = c.tools.map(t =>
+    `<div class="node tool" id="node-tool-${t.id}"><h3><span class="dot"></span><span class="mono">${t.name}</span></h3><div class="role" style="margin-bottom:0">${t.desc}</div><div class="io" id="io-${t.id}"></div></div>`).join('');
+  $('notes').innerHTML = c.notes;
+  timelineRender();
+  go(0, false);
+}
+
+function ctxLen(ctx) { return ctx.reduce((a, s) => a + s.text.length, 0); }
+
+function timelineRender() {
+  const groups = [];
+  steps.forEach((s, i) => {
+    const g = s.iter || '';
+    if (!groups.length || groups[groups.length - 1].lbl !== g) groups.push({ lbl: g, idx: [] });
+    groups[groups.length - 1].idx.push(i);
+  });
+  $('timeline').innerHTML = groups.map(g => `<div class="tl-group"><span class="tl-lbl">${g.lbl}</span><div class="tl-dots">${
+    g.idx.map(i => `<button class="tl-dot" data-i="${i}" title="${esc(steps[i].title)}" style="--c:${ACTORS[steps[i].actor].color}" type="button"></button>`).join('')
+  }</div></div>`).join('');
+  $('timeline').querySelectorAll('.tl-dot').forEach(b => b.onclick = () => { stop(); go(+b.dataset.i, true); });
+}
+
+/* Estado acumulado hasta el paso i */
+function stateAt(i) {
+  const st = { mem: [], ctx: null, prevCtx: null, modelOut: null, thinking: false, userMsg: null, userAnswer: null, io: {}, status: '', iter: '', trace: [] };
+  for (let k = 0; k <= i; k++) {
+    const s = steps[k];
+    if (s.memAdd) st.mem.push({ text: s.memAdd, fresh: k === i });
+    if (s.ctx) { st.prevCtx = st.ctx; st.ctx = s.ctx; }
+    if (s.thinking) { st.thinking = true; st.modelOut = null; }
+    if (s.modelOut) { st.modelOut = s.modelOut; st.thinking = false; }
+    if (s.userMsg) st.userMsg = s.userMsg;
+    if (s.userAnswer) st.userAnswer = s.userAnswer;
+    if (s.toolIO) st.io[s.toolIO.id] = s.toolIO;
+    if (s.status) st.status = s.status;
+    if (s.iter) st.iter = s.iter;
+    if (s.trace) st.trace.push({ text: s.trace, now: k === i });
+  }
+  return st;
+}
+
+function go(i, animate) {
+  cur = Math.max(0, Math.min(steps.length - 1, i));
+  const s = steps[cur], st = stateAt(cur);
+  const dur = 950 / speed();
+  const delay = animate && s.from ? dur : 0;
+
+  /* Paneles del diagrama */
+  $('userBox').innerHTML =
+    (st.userMsg ? `<div class="bubble">${esc(st.userMsg)}</div>` : '<div class="empty">Sin mensajes todavía</div>') +
+    (st.userAnswer ? `<div class="bubble final"><b>Respuesta:</b> ${esc(st.userAnswer)}</div>` : '');
+  $('iterBadge').textContent = st.iter || 'Inicio';
+  $('hStatus').textContent = st.status;
+  $('memList').innerHTML = st.mem.length
+    ? st.mem.map(m => `<div class="mem-item${m.fresh ? ' fresh' : ''}" style="--delay:${m.fresh ? delay : 0}ms">${esc(m.text)}</div>`).join('')
+    : '<div class="empty">Vacía</div>';
+  $('llmCore').innerHTML = st.thinking && (s.to === 'model')
+    ? 'LLM <span class="thinking"><span></span><span></span><span></span></span>'
+    : 'LLM';
+  $('modelOut').innerHTML = st.modelOut ? `<div class="bubble out">${esc(st.modelOut)}</div>` : '';
+  CASES[caseId].tools.forEach(t => {
+    const io = st.io[t.id];
+    $('io-' + t.id).innerHTML = io
+      ? `<div><span class="lbl">Entrada:</span> ${esc(io.input)}</div>` + (io.output ? `<div><span class="lbl">Salida:</span> ${esc(io.output)}</div>` : '')
+      : '';
+  });
+
+  /* Resaltados */
+  document.querySelectorAll('.node, .sub').forEach(n => n.classList.remove('on', 'pulse'));
+  const target = s.to ? nodeEl(s.to) : null;
+  const source = s.from ? nodeEl(s.from) : null;
+  if (source) source.classList.add('on');
+  (s.hl || []).forEach(h => $(h).classList.add('on'));
+  if (target) {
+    setTimeout(() => {
+      if (steps[cur] !== s) return;
+      target.classList.add('on');
+      if (animate) { target.classList.remove('pulse'); void target.offsetWidth; target.classList.add('pulse'); }
+    }, delay);
+  }
+  drawLinks(s);
+  if (animate && s.from) flyPacket(s, dur);
+
+  /* Panel del paso */
+  const a = ACTORS[s.actor];
+  $('stepPanel').style.setProperty('--c', a.color);
+  $('actorBadge').textContent = a.name;
+  $('actorBadge').style.setProperty('--c', a.color);
+  $('stepTitle').textContent = s.title;
+  $('stepText').innerHTML = s.text || '';
+  $('payloadWrap').innerHTML = s.payload
+    ? `<div class="payload-lbl">${esc(s.payloadLbl || '')}</div><pre class="payload" style="--c:${a.color}">${esc(s.payload)}</pre>` : '';
+
+  /* Prompt */
+  renderPrompt(s, st);
+
+  /* Trace */
+  const tb = $('traceBox');
+  tb.innerHTML = st.trace.length
+    ? st.trace.map(t => `<span class="${t.now ? 'now' : 'past'}">${esc(t.text)}</span>`).join('')
+    : '<span class="past">El trace aparece conforme avanzan los pasos.</span>';
+  const nowEl = tb.querySelector('.now');
+  if (nowEl) tb.scrollTop = nowEl.offsetTop - tb.offsetTop - 40;
+
+  /* Línea de tiempo y controles */
+  $('timeline').querySelectorAll('.tl-dot').forEach(d => {
+    const k = +d.dataset.i;
+    d.classList.toggle('cur', k === cur);
+    d.classList.toggle('done', k < cur);
+  });
+  $('counter').textContent = `Paso ${cur + 1} de ${steps.length}`;
+  $('btnPrev').disabled = cur === 0;
+  $('btnNext').disabled = cur === steps.length - 1;
+}
+
+function renderPrompt(s, st) {
+  const v = $('view-prompt');
+  if (!st.ctx) {
+    v.innerHTML = '<p class="empty">El harness todavía no ha llamado al modelo. Aquí aparecerá el prompt completo que recibe el LLM en cada llamada.</p>';
+    return;
+  }
+  const sending = !!s.ctx;
+  const len = ctxLen(st.ctx), prev = st.prevCtx ? ctxLen(st.prevCtx) : 0;
+  v.innerHTML =
+    `<p style="margin:0 0 8px;font-size:.85rem;color:var(--muted)">${sending
+      ? 'Este es el prompt que el harness envía al modelo en este paso. Lo resaltado es nuevo respecto a la llamada anterior.'
+      : 'Último prompt que recibió el modelo. Fuera de las llamadas al modelo, el LLM no ve nada más.'}</p>` +
+    st.ctx.map(g => `<div class="seg k-${g.k}${g.isNew && sending ? ' new' : ''}">${g.isNew && sending ? '<span class="new-tag">NUEVO</span>' : ''}<div class="seg-lbl">${esc(g.lbl)}</div><pre>${esc(g.text)}</pre></div>`).join('') +
+    `<div class="psize">Tamaño del prompt: ${len.toLocaleString('es-MX')} caracteres${prev ? ` (llamada anterior: ${prev.toLocaleString('es-MX')})` : ''}</div>
+     <div class="pbar"><div style="width:${Math.round(100 * len / maxCtx)}%"></div></div>`;
+}
+
+function nodeEl(ref) {
+  if (ref.startsWith('tool:')) return $('node-tool-' + ref.slice(5));
+  return $('node-' + ref);
+}
+
+function centerOf(el) {
+  const r = el.getBoundingClientRect(), sr = $('stage').getBoundingClientRect();
+  return { x: r.left - sr.left + r.width / 2, y: r.top - sr.top + r.height / 2 };
+}
+
+function drawLinks(s) {
+  const svg = $('links'), sr = $('stage').getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${sr.width} ${sr.height}`);
+  const h = centerOf($('node-harness'));
+  const pairs = [['user', $('node-user')], ['model', $('node-model')]]
+    .concat(CASES[caseId].tools.map(t => ['tool:' + t.id, $('node-tool-' + t.id)]));
+  const activeRef = s && (s.from === 'harness' ? s.to : s.to === 'harness' ? s.from : null);
+  const color = s ? ACTORS[s.actor].color : '';
+  svg.innerHTML = pairs.map(([ref, el]) => {
+    const c = centerOf(el);
+    const act = ref === activeRef;
+    return `<line x1="${h.x}" y1="${h.y}" x2="${c.x}" y2="${c.y}" class="${act ? 'active' : ''}" style="--c:${color}"/>`;
+  }).join('');
+}
+
+function flyPacket(s, dur) {
+  document.querySelectorAll('.packet').forEach(p => p.remove());
+  const a = centerOf(nodeEl(s.from)), b = centerOf(nodeEl(s.to));
+  const p = document.createElement('div');
+  p.className = 'packet';
+  p.textContent = s.packet || '';
+  p.style.setProperty('--c', ACTORS[s.actor].color);
+  $('stage').appendChild(p);
+  const w = p.offsetWidth / 2, hh = p.offsetHeight / 2;
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - 30;
+  const anim = p.animate([
+    { transform: `translate(${a.x - w}px, ${a.y - hh}px) scale(.7)`, opacity: 0 },
+    { transform: `translate(${(a.x + mx) / 2 - w}px, ${(a.y + my) / 2 - hh}px) scale(1)`, opacity: 1, offset: .2 },
+    { transform: `translate(${mx - w}px, ${my - hh}px) scale(1.05)`, opacity: 1, offset: .5 },
+    { transform: `translate(${b.x - w}px, ${b.y - hh}px) scale(1)`, opacity: 1, offset: .9 },
+    { transform: `translate(${b.x - w}px, ${b.y - hh}px) scale(.6)`, opacity: 0 }
+  ], { duration: dur, easing: 'ease-in-out', fill: 'forwards' });
+  anim.onfinish = () => p.remove();
+}
+
+/* Reproducción */
+function speed() { return parseFloat($('speed').value) || 1; }
+function readTime(s) {
+  const len = (s.text || '').replace(/<[^>]+>/g, '').length + (s.payload || '').length * .4;
+  return Math.min(11000, Math.max(3200, len * 38));
+}
+function schedule() {
+  clearTimeout(timer);
+  if (!playing) return;
+  if (cur >= steps.length - 1) { stop(); return; }
+  timer = setTimeout(() => { go(cur + 1, true); schedule(); }, (950 + readTime(steps[cur])) / speed());
+}
+function play() {
+  if (cur >= steps.length - 1) go(0, false);
+  playing = true; $('btnPlay').textContent = 'Pausa';
+  clearTimeout(timer);
+  timer = setTimeout(() => { go(cur + 1, true); schedule(); }, 400);
+}
+function stop() { playing = false; clearTimeout(timer); const b = $('btnPlay'); if (b) b.textContent = 'Reproducir'; }
+
+$('btnPlay').onclick = () => playing ? stop() : play();
+$('btnNext').onclick = () => { stop(); go(cur + 1, true); };
+$('btnPrev').onclick = () => { stop(); go(cur - 1, false); };
+$('btnReset').onclick = () => { stop(); go(0, false); };
+$('speed').onchange = () => { if (playing) schedule(); };
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); $('btnNext').click(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); $('btnPrev').click(); }
+  else if (e.key === ' ') { e.preventDefault(); $('btnPlay').click(); }
+});
+document.querySelectorAll('.ptab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.ptab').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('.pview').forEach(v => v.classList.toggle('active', v.id === 'view-' + b.dataset.view));
+  if (b.dataset.view === 'trace') { const n = $('traceBox').querySelector('.now'); if (n) $('traceBox').scrollTop = n.offsetTop - $('traceBox').offsetTop - 40; }
+});
+$('themeBtn').onclick = () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+};
+window.addEventListener('resize', () => drawLinks(steps[cur]));
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h && h !== caseId) loadCase(h); });
+
+loadCase(location.hash.slice(1) || 'precios');
+</script>
+</body>
+</html>
