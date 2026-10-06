@@ -194,8 +194,8 @@ pre.trace .gone { display: none; }
 .sp-note { margin-top: 10px; font-size: .8rem; background: var(--new); border: 1px solid var(--new-border); border-radius: 8px; padding: 6px 9px; }
 .sp-foot { margin-top: 10px; font-size: .7rem; color: var(--muted); font-style: italic; }
 
-footer.autor { margin-top: 28px; padding: 14px 0 0; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; justify-content: space-between; font-size: .88rem; color: var(--muted); }
-footer.autor b { color: var(--text); }
-footer.autor nav { display: flex; gap: 14px; flex-wrap: wrap; }
-footer.autor a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--border); }
-footer.autor a:hover { color: var(--text); border-bottom-color: var(--text); }
+.autor { margin: 0 0 14px; padding: 0 0 10px; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; justify-content: space-between; font-size: .88rem; color: var(--muted); }
+.autor b { color: var(--text); }
+.autor nav { display: flex; gap: 14px; flex-wrap: wrap; }
+.autor a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--border); }
+.autor a:hover { color: var(--text); border-bottom-color: var(--text); }
