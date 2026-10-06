@@ -1,7 +1,7 @@
 /* Motor común de los demos de patrones de orquestación.
    Lee window.PATRON (diagrama y pasos) y window.META (textos extraídos del .md). */
 (function () {
-  const P = window.PATRON, M = window.META;
+  const P = window.PATRON, M = window.META, SP = window.PROMPTS || {};
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -42,7 +42,8 @@
   const usedFlows = [...new Set(steps.flatMap(s => (s.flows || []).map(f => f.k || 'ctx')))];
   $('legend').innerHTML =
     usedTypes.map(t => `<span><i style="background:var(--t-${t})"></i>${TYPES[t]}</span>`).join('') +
-    usedFlows.map(k => `<span><i class="ln" style="background:${FLOWS[k][1]}"></i>Flujo: ${FLOWS[k][0].toLowerCase()}</span>`).join('');
+    usedFlows.map(k => `<span><i class="ln" style="background:${FLOWS[k][1]}"></i>Flujo: ${FLOWS[k][0].toLowerCase()}</span>`).join('') +
+    (Object.keys(SP).length ? '<span><span class="sp-chip demo">system prompt</span>pasa el cursor o haz clic para ver las instrucciones de cada agente</span>' : '');
 
   /* ---------- Escenario ---------- */
   const stage = $('stage');
@@ -55,7 +56,8 @@
   P.nodes.forEach(n => {
     html += `<div class="nd t-${n.type}" id="n-${n.id}" style="left:${n.x}%;top:${n.y}%;width:${n.w || 150}px">` +
       `<div class="nd-type">${n.tag || TYPES[n.type]}</div><div class="nd-name${n.mono === false ? '' : ' mono'}">${esc(n.name).replace(/_/g, '_<wbr>')}</div>` +
-      (n.desc ? `<div class="nd-desc">${esc(n.desc)}</div>` : '') + `<span class="nd-badge" id="b-${n.id}" hidden></span></div>`;
+      (n.desc ? `<div class="nd-desc">${esc(n.desc)}</div>` : '') + `<span class="nd-badge" id="b-${n.id}" hidden></span>` +
+      (SP[n.id] ? `<button class="sp-chip" data-sp="${n.id}" type="button" aria-label="Ver el system prompt de ${esc(n.name)}">system prompt</button>` : '') + '</div>';
   });
   stage.innerHTML = html;
   const svg = $('svg');
@@ -162,7 +164,8 @@
     const ctxs = s.ctx ? (Array.isArray(s.ctx) ? s.ctx : [s.ctx]) : [];
     $('ctxWrap').innerHTML = ctxs.length
       ? '<div class="sec-lbl">Contexto que recibe</div>' + ctxs.map(c =>
-          `<div class="ctx"><h4>${c.title ? esc(c.title) : 'Recibe <span class="to">' + esc(nodeById[c.to] ? nodeById[c.to].name : c.to) + '</span>'}</h4>` +
+          `<div class="ctx"><h4>${c.title ? esc(c.title) : 'Recibe <span class="to">' + esc(nodeById[c.to] ? nodeById[c.to].name : c.to) + '</span>'}` +
+          (c.to && SP[c.to] ? ` <button class="sp-chip inline" data-sp="${c.to}" type="button">system prompt</button>` : '') + '</h4>' +
           (c.parts || []).map(p => `<div class="part p-${p.k}"><div class="pl">${PARTS[p.k]}${p.src ? ' <span class="src">· ' + esc(p.src) + '</span>' : ''}</div><pre>${esc(p.text)}</pre></div>`).join('') +
           (c.miss || []).map(m => `<div class="part miss"><div class="pl">No recibe</div><pre>${esc(m)}</pre></div>`).join('') +
           '</div>').join('')
@@ -272,6 +275,93 @@
     const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
     root.dataset.theme = dark ? 'light' : 'dark';
   };
+
+  /* ---------- System prompts: popover al pasar el cursor, fijo al hacer clic ---------- */
+  const pop = document.createElement('div');
+  pop.className = 'sp-pop'; pop.id = 'spPop'; pop.hidden = true;
+  pop.setAttribute('role', 'dialog');
+  document.body.appendChild(pop);
+  let pinned = false, hideT = null, popFor = null;
+
+  /* Une las líneas de continuación para que el texto se ajuste al ancho del popover.
+     Conserva líneas en blanco, viñetas y las líneas que siguen a un encabezado con ":". */
+  function reflow(text) {
+    const out = [];
+    text.split('\n').forEach(line => {
+      const t = line.trim(), prev = out.length ? out[out.length - 1] : null;
+      const isItem = /^(-|\d+\.|C\d)\s/.test(t);
+      if (prev !== null && prev.trim() && t && !isItem && !/:$/.test(prev.trim())) out[out.length - 1] = prev + ' ' + t;
+      else out.push(isItem ? line.replace(/^(\s*)/, '$1') : t);
+    });
+    return out.join('\n');
+  }
+  function popHtml(id) {
+    const d = SP[id], n = nodeById[id] || { name: id, tag: '' };
+    const tools = d.tools || [];
+    return `<div class="sp-head"><div><div class="sp-tag">${esc(n.tag || TYPES[n.type] || '')} · system prompt</div>` +
+      `<div class="sp-name mono">${esc(n.name)}</div></div>` +
+      `<button class="sp-close" type="button" aria-label="Cerrar">Cerrar</button></div>` +
+      `<pre class="sp-text">${esc(reflow(d.prompt))}</pre>` +
+      (tools.length ? '<div class="sp-sec">Herramientas que puede invocar</div>' + tools.map(t =>
+        `<div class="sp-tool"><code>${esc(t.sig)}</code><div>${esc(t.desc)}</div></div>`).join('') : '') +
+      (d.salida ? `<div class="sp-sec">Formato de salida esperado</div><pre class="sp-text small">${esc(d.salida)}</pre>` : '') +
+      (d.nota ? `<div class="sp-note"><b>Observa:</b> ${d.nota}</div>` : '') +
+      '<div class="sp-foot">Instrucciones hipotéticas, redactadas para ilustrar el rol del agente. No forman parte del trace original.</div>';
+  }
+  function placePop(anchor) {
+    const r = anchor.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
+    pop.style.maxHeight = '';
+    if (vw < 640) { pop.style.left = '3vw'; pop.style.top = '5vh'; return; }
+    const w = pop.offsetWidth, gap = 10;
+    let h = pop.offsetHeight, x, y;
+    if (r.right + gap + w <= vw - gap || r.left - gap - w >= gap) {
+      /* A un lado del chip */
+      x = r.right + gap + w <= vw - gap ? r.right + gap : r.left - gap - w;
+      y = Math.max(gap, Math.min(r.top - 20, vh - h - gap));
+    } else {
+      /* Arriba o abajo del chip, sin taparlo */
+      x = Math.max(gap, Math.min(r.left + r.width / 2 - w / 2, vw - w - gap));
+      const below = vh - r.bottom - gap * 2, above = r.top - gap * 2;
+      if (h > below && above > below) {
+        if (h > above) { pop.style.maxHeight = above + 'px'; h = above; }
+        y = r.top - gap - h;
+      } else {
+        if (h > below) { pop.style.maxHeight = below + 'px'; h = below; }
+        y = r.bottom + gap;
+      }
+    }
+    pop.style.left = x + 'px'; pop.style.top = y + 'px';
+  }
+  function showPop(anchor, pin) {
+    clearTimeout(hideT);
+    const id = anchor.dataset.sp;
+    if (popFor !== id || pop.hidden) { pop.innerHTML = popHtml(id); popFor = id; }
+    pop.hidden = false;
+    pinned = pin || pinned;
+    pop.classList.toggle('pinned', pinned);
+    placePop(anchor);
+  }
+  function hidePop(force) {
+    if (pinned && !force) return;
+    pinned = false; pop.hidden = true; popFor = null;
+  }
+  document.addEventListener('mouseover', e => {
+    const chip = e.target.closest && e.target.closest('.sp-chip[data-sp]');
+    if (chip && !pinned) showPop(chip, false);
+  });
+  document.addEventListener('mouseout', e => {
+    const chip = e.target.closest && e.target.closest('.sp-chip[data-sp]');
+    if (chip && !pinned) hideT = setTimeout(() => { if (!pop.matches(':hover')) hidePop(); }, 180);
+  });
+  pop.addEventListener('mouseleave', () => { if (!pinned) hideT = setTimeout(() => hidePop(), 180); });
+  document.addEventListener('click', e => {
+    const chip = e.target.closest('.sp-chip[data-sp]');
+    if (chip) { e.preventDefault(); e.stopPropagation(); pinned = false; showPop(chip, true); return; }
+    if (e.target.closest('.sp-close')) { hidePop(true); return; }
+    if (pinned && !e.target.closest('#spPop')) hidePop(true);
+  });
+  document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.sp-chip[data-sp]') && !pinned) showPop(e.target, false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hidePop(true); });
 
   window.__go = go;
   window.__steps = steps;

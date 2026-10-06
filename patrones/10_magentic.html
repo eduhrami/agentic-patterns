@@ -171,6 +171,42 @@ pre.trace .gone { display: none; }
   pre.trace { white-space: pre-wrap; }
 }
 
+/* System prompts */
+.sp-chip {
+  position: absolute; right: 8px; bottom: -10px; z-index: 3; cursor: pointer;
+  font-size: .6rem; font-weight: 800; letter-spacing: .03em; font-family: ui-monospace, Menlo, Consolas, monospace;
+  background: var(--panel); color: var(--t-agent); border: 1.5px solid var(--t-agent); border-radius: 999px; padding: 1px 7px;
+}
+.sp-chip:hover, .sp-chip:focus-visible { background: var(--t-agent); color: var(--panel); outline: none; }
+.sp-chip.inline { position: static; margin-left: 6px; vertical-align: middle; }
+.sp-chip.demo { position: static; cursor: default; margin-right: 2px; }
+.nd.off .sp-chip { opacity: .5; }
+.sp-pop {
+  position: fixed; z-index: 50; width: min(610px, 94vw); max-height: 78vh; overflow: auto;
+  background: var(--panel); color: var(--text); border: 1px solid var(--border); border-top: 4px solid var(--t-agent);
+  border-radius: 12px; box-shadow: 0 12px 40px rgba(0, 0, 0, .3); padding: 12px 14px; font-size: .85rem;
+}
+.sp-pop[hidden] { display: none; }
+.sp-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.sp-tag { font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--t-agent); }
+.sp-name { font-weight: 700; font-size: .95rem; }
+.sp-close { display: none; background: var(--panel2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: .75rem; }
+.sp-pop.pinned .sp-close { display: inline-block; }
+.sp-text { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; margin: 0; font-size: .76rem; white-space: pre-wrap; word-break: break-word; }
+.sp-text.small { font-size: .72rem; }
+.sp-sec { font-size: .7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 10px 0 4px; }
+.sp-tool { border-left: 3px solid var(--t-tool); padding: 3px 0 3px 8px; margin-bottom: 6px; font-size: .78rem; }
+.sp-tool code { font-size: .74rem; color: var(--t-tool); font-weight: 700; word-break: break-word; }
+.sp-tool div { color: var(--muted); }
+.sp-note { margin-top: 10px; font-size: .8rem; background: var(--new); border: 1px solid var(--new-border); border-radius: 8px; padding: 6px 9px; }
+.sp-foot { margin-top: 10px; font-size: .7rem; color: var(--muted); font-style: italic; }
+
+footer.autor { margin-top: 28px; padding: 14px 0 0; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; justify-content: space-between; font-size: .88rem; color: var(--muted); }
+footer.autor b { color: var(--text); }
+footer.autor nav { display: flex; gap: 14px; flex-wrap: wrap; }
+footer.autor a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--border); }
+footer.autor a:hover { color: var(--text); border-bottom-color: var(--text); }
+
 </style>
 </head>
 <body>
@@ -234,6 +270,14 @@ pre.trace .gone { display: none; }
   </div>
 
   <section class="panel reading" id="reading"></section>
+<footer class="autor">
+  <div><b>Eduardo H. Ramirez, PhD</b></div>
+  <nav aria-label="Redes sociales">
+    <a href="https://www.linkedin.com/in/ehramirez" target="_blank" rel="noopener">LinkedIn</a>
+    <a href="https://x.com/eduhrami" target="_blank" rel="noopener">X</a>
+    <a href="https://github.com/eduhrami" target="_blank" rel="noopener">GitHub</a>
+  </nav>
+</footer>
 </div>
 <script>
 window.META = {
@@ -388,10 +432,88 @@ window.PATRON = {
 
 </script>
 <script>
+window.PROMPTS = {
+  man: {
+    prompt: `Eres el manager de respuesta a incidentes de SRE. Tu meta es restaurar el
+servicio afectado.
+
+Instrucciones:
+- Mantén un registro de tareas con estado: pendiente, en curso, completada o
+  descartada. Cuando una observación contradiga tu plan, actualiza el registro
+  y anota por qué descartas una tarea.
+- Asigna cada tarea al especialista adecuado:
+  - diagnostico: logs y métricas (solo lectura).
+  - infraestructura: estado del sistema y opciones de recuperación.
+  - reversion: reversión de despliegues.
+  - comunicacion: avisos en el canal de incidentes.
+- Avisa al inicio del incidente y al recuperarse el servicio.
+- Toda acción que modifique producción requiere aprobación de la persona de
+  guardia. Prefiere la opción reversible y explica por qué.
+- Al final, evalúa si se cumplió la meta y asigna a una persona las tareas
+  de seguimiento.`,
+    tools: [
+      { sig: 'asignar_tarea(especialista: texto, instruccion: texto)', desc: 'Envía una tarea a un especialista y devuelve su observación.' },
+      { sig: 'actualizar_registro(tareas: lista)', desc: 'Guarda una nueva versión del registro de tareas con hora.' },
+      { sig: 'solicitar_aprobacion(accion: texto, justificacion: texto)', desc: 'Pide aprobación a la persona de guardia y espera su respuesta.' }
+    ]
+  },
+  dia: {
+    prompt: `Eres el especialista de diagnóstico. Tienes acceso de solo lectura a logs y
+métricas de producción.
+
+Analiza el periodo que te indique el manager. Reporta el error predominante,
+desde cuándo ocurre y si se relaciona con algún despliegue o cambio reciente.
+No propongas acciones de recuperación.`,
+    tools: [
+      { sig: 'buscar_logs(servicio: texto, desde: hora, patron: texto)', desc: 'Devuelve las líneas de log que coinciden y su frecuencia.' },
+      { sig: 'consultar_metricas(servicio: texto, desde: hora)', desc: 'Devuelve tasa de error, latencia y uso de recursos.' },
+      { sig: 'consultar_despliegues(servicio: texto, desde: hora)', desc: 'Devuelve los despliegues recientes y los archivos que modificaron.' }
+    ]
+  },
+  inf: {
+    prompt: `Eres el especialista de infraestructura. Consultas el estado del sistema y
+ejecutas acciones de recuperación por CLI.
+
+Instrucciones:
+- Cuando te pidan un diagnóstico, devuelve el estado y las opciones de
+  recuperación, indicando cuáles son reversibles.
+- Solo ejecuta acciones que el manager te indique explícitamente como
+  aprobadas. Después de ejecutar, reporta el efecto en las métricas.`,
+    tools: [
+      { sig: 'estado_pool_conexiones(base_datos: texto)', desc: 'Devuelve conexiones en uso, límite y procesos que las ocupan.' },
+      { sig: 'detener_proceso(id_proceso: texto)', desc: 'Detiene un proceso programado. Requiere aprobación previa.' },
+      { sig: 'ajustar_pool(base_datos: texto, limite: número)', desc: 'Cambia el límite de conexiones. Requiere aprobación previa.' }
+    ]
+  },
+  rev: {
+    prompt: `Eres el especialista de reversión. Reviertes despliegues a la versión
+estable anterior.
+
+Solo actúa cuando el manager te lo pida. Antes de revertir, confirma la
+versión de destino y avisa qué cambios se perderán.`,
+    tools: [
+      { sig: 'revertir_despliegue(servicio: texto, version_destino: texto)', desc: 'Revierte el servicio a la versión indicada (Git y CLI).' }
+    ],
+    nota: 'en el trace, el manager nunca usa este especialista: el diagnóstico descartó la hipótesis de revertir v4.18 antes de asignarle la tarea.'
+  },
+  com: {
+    prompt: `Eres el especialista de comunicación de incidentes. Publicas avisos breves
+y factuales en el canal de incidentes.
+
+Cada aviso incluye: servicio afectado, impacto, estado actual y hora del
+siguiente aviso. No especules sobre la causa hasta que el manager la confirme.`,
+    tools: [
+      { sig: 'publicar_aviso(canal: texto, mensaje: texto)', desc: 'Publica un mensaje en el canal indicado (API de mensajería).' }
+    ]
+  }
+};
+
+</script>
+<script>
 /* Motor común de los demos de patrones de orquestación.
    Lee window.PATRON (diagrama y pasos) y window.META (textos extraídos del .md). */
 (function () {
-  const P = window.PATRON, M = window.META;
+  const P = window.PATRON, M = window.META, SP = window.PROMPTS || {};
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -432,7 +554,8 @@ window.PATRON = {
   const usedFlows = [...new Set(steps.flatMap(s => (s.flows || []).map(f => f.k || 'ctx')))];
   $('legend').innerHTML =
     usedTypes.map(t => `<span><i style="background:var(--t-${t})"></i>${TYPES[t]}</span>`).join('') +
-    usedFlows.map(k => `<span><i class="ln" style="background:${FLOWS[k][1]}"></i>Flujo: ${FLOWS[k][0].toLowerCase()}</span>`).join('');
+    usedFlows.map(k => `<span><i class="ln" style="background:${FLOWS[k][1]}"></i>Flujo: ${FLOWS[k][0].toLowerCase()}</span>`).join('') +
+    (Object.keys(SP).length ? '<span><span class="sp-chip demo">system prompt</span>pasa el cursor o haz clic para ver las instrucciones de cada agente</span>' : '');
 
   /* ---------- Escenario ---------- */
   const stage = $('stage');
@@ -445,7 +568,8 @@ window.PATRON = {
   P.nodes.forEach(n => {
     html += `<div class="nd t-${n.type}" id="n-${n.id}" style="left:${n.x}%;top:${n.y}%;width:${n.w || 150}px">` +
       `<div class="nd-type">${n.tag || TYPES[n.type]}</div><div class="nd-name${n.mono === false ? '' : ' mono'}">${esc(n.name).replace(/_/g, '_<wbr>')}</div>` +
-      (n.desc ? `<div class="nd-desc">${esc(n.desc)}</div>` : '') + `<span class="nd-badge" id="b-${n.id}" hidden></span></div>`;
+      (n.desc ? `<div class="nd-desc">${esc(n.desc)}</div>` : '') + `<span class="nd-badge" id="b-${n.id}" hidden></span>` +
+      (SP[n.id] ? `<button class="sp-chip" data-sp="${n.id}" type="button" aria-label="Ver el system prompt de ${esc(n.name)}">system prompt</button>` : '') + '</div>';
   });
   stage.innerHTML = html;
   const svg = $('svg');
@@ -552,7 +676,8 @@ window.PATRON = {
     const ctxs = s.ctx ? (Array.isArray(s.ctx) ? s.ctx : [s.ctx]) : [];
     $('ctxWrap').innerHTML = ctxs.length
       ? '<div class="sec-lbl">Contexto que recibe</div>' + ctxs.map(c =>
-          `<div class="ctx"><h4>${c.title ? esc(c.title) : 'Recibe <span class="to">' + esc(nodeById[c.to] ? nodeById[c.to].name : c.to) + '</span>'}</h4>` +
+          `<div class="ctx"><h4>${c.title ? esc(c.title) : 'Recibe <span class="to">' + esc(nodeById[c.to] ? nodeById[c.to].name : c.to) + '</span>'}` +
+          (c.to && SP[c.to] ? ` <button class="sp-chip inline" data-sp="${c.to}" type="button">system prompt</button>` : '') + '</h4>' +
           (c.parts || []).map(p => `<div class="part p-${p.k}"><div class="pl">${PARTS[p.k]}${p.src ? ' <span class="src">· ' + esc(p.src) + '</span>' : ''}</div><pre>${esc(p.text)}</pre></div>`).join('') +
           (c.miss || []).map(m => `<div class="part miss"><div class="pl">No recibe</div><pre>${esc(m)}</pre></div>`).join('') +
           '</div>').join('')
@@ -662,6 +787,93 @@ window.PATRON = {
     const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
     root.dataset.theme = dark ? 'light' : 'dark';
   };
+
+  /* ---------- System prompts: popover al pasar el cursor, fijo al hacer clic ---------- */
+  const pop = document.createElement('div');
+  pop.className = 'sp-pop'; pop.id = 'spPop'; pop.hidden = true;
+  pop.setAttribute('role', 'dialog');
+  document.body.appendChild(pop);
+  let pinned = false, hideT = null, popFor = null;
+
+  /* Une las líneas de continuación para que el texto se ajuste al ancho del popover.
+     Conserva líneas en blanco, viñetas y las líneas que siguen a un encabezado con ":". */
+  function reflow(text) {
+    const out = [];
+    text.split('\n').forEach(line => {
+      const t = line.trim(), prev = out.length ? out[out.length - 1] : null;
+      const isItem = /^(-|\d+\.|C\d)\s/.test(t);
+      if (prev !== null && prev.trim() && t && !isItem && !/:$/.test(prev.trim())) out[out.length - 1] = prev + ' ' + t;
+      else out.push(isItem ? line.replace(/^(\s*)/, '$1') : t);
+    });
+    return out.join('\n');
+  }
+  function popHtml(id) {
+    const d = SP[id], n = nodeById[id] || { name: id, tag: '' };
+    const tools = d.tools || [];
+    return `<div class="sp-head"><div><div class="sp-tag">${esc(n.tag || TYPES[n.type] || '')} · system prompt</div>` +
+      `<div class="sp-name mono">${esc(n.name)}</div></div>` +
+      `<button class="sp-close" type="button" aria-label="Cerrar">Cerrar</button></div>` +
+      `<pre class="sp-text">${esc(reflow(d.prompt))}</pre>` +
+      (tools.length ? '<div class="sp-sec">Herramientas que puede invocar</div>' + tools.map(t =>
+        `<div class="sp-tool"><code>${esc(t.sig)}</code><div>${esc(t.desc)}</div></div>`).join('') : '') +
+      (d.salida ? `<div class="sp-sec">Formato de salida esperado</div><pre class="sp-text small">${esc(d.salida)}</pre>` : '') +
+      (d.nota ? `<div class="sp-note"><b>Observa:</b> ${d.nota}</div>` : '') +
+      '<div class="sp-foot">Instrucciones hipotéticas, redactadas para ilustrar el rol del agente. No forman parte del trace original.</div>';
+  }
+  function placePop(anchor) {
+    const r = anchor.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
+    pop.style.maxHeight = '';
+    if (vw < 640) { pop.style.left = '3vw'; pop.style.top = '5vh'; return; }
+    const w = pop.offsetWidth, gap = 10;
+    let h = pop.offsetHeight, x, y;
+    if (r.right + gap + w <= vw - gap || r.left - gap - w >= gap) {
+      /* A un lado del chip */
+      x = r.right + gap + w <= vw - gap ? r.right + gap : r.left - gap - w;
+      y = Math.max(gap, Math.min(r.top - 20, vh - h - gap));
+    } else {
+      /* Arriba o abajo del chip, sin taparlo */
+      x = Math.max(gap, Math.min(r.left + r.width / 2 - w / 2, vw - w - gap));
+      const below = vh - r.bottom - gap * 2, above = r.top - gap * 2;
+      if (h > below && above > below) {
+        if (h > above) { pop.style.maxHeight = above + 'px'; h = above; }
+        y = r.top - gap - h;
+      } else {
+        if (h > below) { pop.style.maxHeight = below + 'px'; h = below; }
+        y = r.bottom + gap;
+      }
+    }
+    pop.style.left = x + 'px'; pop.style.top = y + 'px';
+  }
+  function showPop(anchor, pin) {
+    clearTimeout(hideT);
+    const id = anchor.dataset.sp;
+    if (popFor !== id || pop.hidden) { pop.innerHTML = popHtml(id); popFor = id; }
+    pop.hidden = false;
+    pinned = pin || pinned;
+    pop.classList.toggle('pinned', pinned);
+    placePop(anchor);
+  }
+  function hidePop(force) {
+    if (pinned && !force) return;
+    pinned = false; pop.hidden = true; popFor = null;
+  }
+  document.addEventListener('mouseover', e => {
+    const chip = e.target.closest && e.target.closest('.sp-chip[data-sp]');
+    if (chip && !pinned) showPop(chip, false);
+  });
+  document.addEventListener('mouseout', e => {
+    const chip = e.target.closest && e.target.closest('.sp-chip[data-sp]');
+    if (chip && !pinned) hideT = setTimeout(() => { if (!pop.matches(':hover')) hidePop(); }, 180);
+  });
+  pop.addEventListener('mouseleave', () => { if (!pinned) hideT = setTimeout(() => hidePop(), 180); });
+  document.addEventListener('click', e => {
+    const chip = e.target.closest('.sp-chip[data-sp]');
+    if (chip) { e.preventDefault(); e.stopPropagation(); pinned = false; showPop(chip, true); return; }
+    if (e.target.closest('.sp-close')) { hidePop(true); return; }
+    if (pinned && !e.target.closest('#spPop')) hidePop(true);
+  });
+  document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.sp-chip[data-sp]') && !pinned) showPop(e.target, false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hidePop(true); });
 
   window.__go = go;
   window.__steps = steps;

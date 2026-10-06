@@ -5,7 +5,8 @@ Uso:  python3 _build/construir.py   (desde demos_agentes/ o desde cualquier ruta
 
 Toma de traces_patrones_orquestacion.md el título, la introducción, el trace,
 la lectura y las referencias de cada patrón; toma de _build/patrones/NN.js el
-diagrama y los pasos. Genera patrones/NN_slug.html (autocontenidos) e index.html.
+diagrama y los pasos, y de _build/prompts/NN.js los system prompts
+hipotéticos de cada agente. Genera patrones/NN_slug.html (autocontenidos) e index.html.
 """
 import html
 import json
@@ -103,6 +104,7 @@ def build():
         if not data_file.exists():
             print(f"  sin datos: {data_file.name}")
             continue
+        prompts_file = BUILD / "prompts" / f"{num:02d}.js"
         sec, idx = sections[num], index[num]
         meta = {
             "num": num, "total": len(nums), "title": sec["title"], "short": idx["patron"],
@@ -116,6 +118,7 @@ def build():
                    .replace("{{CSS}}", css)
                    .replace("{{META}}", meta_js)
                    .replace("{{DATA}}", data_file.read_text(encoding="utf-8"))
+                   .replace("{{PROMPTS}}", prompts_file.read_text(encoding="utf-8") if prompts_file.exists() else "window.PROMPTS = {};")
                    .replace("{{JS}}", js))
         (OUT / fname(num)).write_text(page, encoding="utf-8")
         built.append(num)
@@ -162,6 +165,12 @@ td code { font-size:.8rem; }
 .refs { font-size:.84rem; color:var(--muted); }
 .refs p { margin:0 0 6px; padding-left:22px; text-indent:-22px; }
 a { color:var(--a); }
+
+footer.autor { margin-top: 28px; padding: 14px 0 0; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; justify-content: space-between; font-size: .88rem; color: var(--muted); }
+footer.autor b { color: var(--text); }
+footer.autor nav { display: flex; gap: 14px; flex-wrap: wrap; }
+footer.autor a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--border); }
+footer.autor a:hover { color: var(--text); border-bottom-color: var(--text); }
 </style>
 </head>
 <body>
@@ -183,7 +192,7 @@ a { color:var(--a); }
 </div>
 
 <h2>2. Patrones de orquestación multi-agente</h2>
-<p class="lead">Cada demo muestra el flujo a nivel workflow: qué agente recibe qué contexto, qué escribe en el estado compartido, quién decide el siguiente paso y dónde intervienen el código y las personas. Los nombres de personas, empresas, folios y cifras son ficticios.</p>
+<p class="lead">Cada demo muestra el flujo a nivel workflow: qué agente recibe qué contexto, qué escribe en el estado compartido, quién decide el siguiente paso y dónde intervienen el código y las personas. Cada agente tiene un chip <b>system prompt</b>: al pasar el cursor o hacer clic se muestran sus instrucciones y herramientas hipotéticas. Los nombres de personas, empresas, folios y cifras son ficticios.</p>
 <div class="grid">
 {{CARDS}}
 </div>
@@ -195,6 +204,14 @@ a { color:var(--a); }
 <div class="refs">
 {{REFS}}
 </div>
+<footer class="autor">
+  <div><b>Eduardo H. Ramirez, PhD</b></div>
+  <nav aria-label="Redes sociales">
+    <a href="https://www.linkedin.com/in/ehramirez" target="_blank" rel="noopener">LinkedIn</a>
+    <a href="https://x.com/eduhrami" target="_blank" rel="noopener">X</a>
+    <a href="https://github.com/eduhrami" target="_blank" rel="noopener">GitHub</a>
+  </nav>
+</footer>
 </div>
 <script>
 document.getElementById('themeBtn').onclick = function () {

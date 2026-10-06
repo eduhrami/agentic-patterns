@@ -39,7 +39,7 @@ window.PATRON = {
         { from: 'orq', to: 'w3', k: 'ctx', label: 'instrucción (Occidente)' }, { from: 'orq', to: 'w4', k: 'ctx', label: 'instrucción (Sureste)' }
       ],
       active: ['orq'],
-      ctx: { title: 'Recibe cada worker', parts: [
+      ctx: { to: 'w1', title: 'Recibe cada worker', parts: [
         { k: 'instr', src: 'orquestador', text: '"' + W_INSTR + '"' },
         { k: 'instr', src: 'R', text: 'Norte | Centro | Occidente | Sureste (una por worker)' }
       ], miss: ['Los resultados de los otros workers.'] },
