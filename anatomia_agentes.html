@@ -229,7 +229,7 @@ table.cmp th { background: var(--panel2); }
       <h1>Anatomía de un agente, paso a paso</h1>
       <p>Qué responde el modelo, qué ejecuta el harness, cómo regresan las observaciones y cómo crece el prompt en cada iteración.</p>
     </div>
-    <div style="display:flex;gap:8px"><a class="theme-btn" href="index.html" style="text-decoration:none">Índice de demos</a><button class="theme-btn" id="themeBtn" type="button">Tema claro / oscuro</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="theme-btn" href="index.html" style="text-decoration:none">Índice de demos</a><a class="theme-btn" id="langLink" href="en/agent_anatomy.html" hreflang="en" lang="en" style="text-decoration:none">English</a><button class="theme-btn" id="themeBtn" type="button">Tema claro / oscuro</button></div>
   </header>
 
   <nav class="tabs" id="tabs"></nav>
@@ -771,6 +771,7 @@ const CASES = {
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+const LANG_TARGET = 'en/agent_anatomy.html', LANG_HASH = { precios: 'prices' };
 let caseId = 'precios', steps = [], cur = 0, playing = false, timer = null, maxCtx = 1;
 
 function tabsRender() {
@@ -794,6 +795,7 @@ function loadCase(id) {
   $('toolsRow').innerHTML = c.tools.map(t =>
     `<div class="node tool" id="node-tool-${t.id}"><h3><span class="dot"></span><span class="mono">${t.name}</span></h3><div class="role" style="margin-bottom:0">${t.desc}</div><div class="io" id="io-${t.id}"></div></div>`).join('');
   $('notes').innerHTML = c.notes;
+  const lk = $('langLink'); if (lk) lk.href = LANG_TARGET + '#' + (LANG_HASH[caseId] || caseId);
   timelineRender();
   go(0, false);
 }

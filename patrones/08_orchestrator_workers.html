@@ -227,6 +227,7 @@ pre.trace .gone { display: none; }
     </div>
     <div class="links">
       <span class="kbd" id="hCount"></span>
+      <a class="navbtn" href="../en/patterns/08_orchestrator_workers.html" hreflang="en" lang="en">English</a>
       <button class="navbtn" id="themeBtn" type="button">Tema claro / oscuro</button>
     </div>
   </div>
@@ -280,6 +281,7 @@ pre.trace .gone { display: none; }
   <section class="panel reading" id="reading"></section>
 </div>
 <script>
+window.UI = {"social": "Redes sociales", "index": "Índice de demos", "prevPattern": "Patrón anterior", "nextPattern": "Patrón siguiente", "theme": "Tema claro / oscuro", "reset": "Reiniciar", "prev": "Anterior", "play": "Reproducir", "pause": "Pausa", "next": "Siguiente", "replay": "Repetir animación", "speed": "Velocidad", "slow": "Lento", "normal": "Normal", "fast": "Rápido", "keys": "Flechas para avanzar o retroceder, espacio para reproducir", "sharedState": "Estado compartido", "fullTrace": "Mostrar el trace completo (las líneas futuras aparecen tenues)", "types": {"input": "Entrada", "agent": "Agente", "code": "Código", "human": "Persona", "output": "Salida", "state": "Estado", "tool": "Herramienta"}, "flows": {"ctx": "Contexto", "res": "Resultado", "handoff": "Handoff", "human": "Persona", "ctrl": "Control", "fb": "Retroalimentación"}, "parts": {"input": "Entrada original", "instr": "Instrucción", "state": "Del estado compartido", "result": "Resultado de otro agente", "feedback": "Retroalimentación", "human": "De una persona", "desc": "Descripciones de agentes", "hist": "Historial"}, "scenario": "Escenario", "source": "Fuente del ejemplo", "patternOf": "Patrón {n} de {t}", "reading": "Lectura del trace", "refs": "Referencias", "flow": "Flujo", "spLegend": "pasa el cursor o haz clic para ver las instrucciones de cada agente", "spAria": "Ver el system prompt de", "flowsInStep": "Flujos de información en este paso", "ctxHead": "Contexto que recibe", "receives": "Recibe", "notReceive": "No recibe", "produces": "Produce", "updated": "ACTUALIZADO", "isNew": "NUEVO", "writes": "escribe", "empty": "Todavía vacío.", "stepOf": "Paso {n} de {t}", "close": "Cerrar", "spTools": "Herramientas que puede invocar", "spOut": "Formato de salida esperado", "spNote": "Observa:", "spFoot": "Instrucciones hipotéticas, redactadas para ilustrar el rol del agente. No forman parte del trace original.", "langLabel": "Idioma", "title": "Demos de agentes y orquestación", "lede": "Animaciones paso a paso, construidas a partir de los traces del curso. Primero, la anatomía de un agente individual; después, cómo fluye el contexto entre agentes en cada patrón de orquestación.", "s1": "1. Anatomía de un agente", "s1lead": "Un solo agente por dentro: qué responde el modelo, qué ejecuta el harness, cómo regresan las observaciones y cómo crece el prompt en cada iteración.", "case": "Anatomía · caso", "cases": [["Agente de precios", "Ciclo básico de acción y observación con un motor de búsqueda y una calculadora."], ["Function Calling", "Estado de un pedido: el modelo devuelve una llamada en JSON y el programa la ejecuta."], ["ReAct", "Queja por cobro duplicado: pensamiento, acción y observación en cinco iteraciones."]], "s2": "2. Patrones de orquestación multi-agente", "s2lead": "Cada demo muestra el flujo a nivel workflow: qué agente recibe qué contexto, qué escribe en el estado compartido, quién decide el siguiente paso y dónde intervienen el código y las personas. Cada agente tiene un chip <b>system prompt<\/b>: al pasar el cursor o hacer clic se muestran sus instrucciones y herramientas hipotéticas. Los nombres de personas, empresas, folios y cifras son ficticios.", "pattern": "Patrón", "sourceShort": "Fuente", "convHead": "Convenciones de notación de los traces", "convCols": ["Etiqueta", "Significado"]};
 window.META = {
  "num": 8,
  "total": 16,
@@ -427,22 +429,16 @@ Instrucciones:
 /* Motor común de los demos de patrones de orquestación.
    Lee window.PATRON (diagrama y pasos) y window.META (textos extraídos del .md). */
 (function () {
-  const P = window.PATRON, M = window.META, SP = window.PROMPTS || {};
+  const P = window.PATRON, M = window.META, SP = window.PROMPTS || {}, T = window.UI;
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-  const TYPES = {
-    input: 'Entrada', agent: 'Agente', code: 'Código', human: 'Persona',
-    output: 'Salida', state: 'Estado', tool: 'Herramienta'
-  };
+  const TYPES = T.types;
   const FLOWS = {
-    ctx: ['Contexto', 'var(--f-ctx)'], res: ['Resultado', 'var(--f-res)'], handoff: ['Handoff', 'var(--f-handoff)'],
-    human: ['Persona', 'var(--f-human)'], ctrl: ['Control', 'var(--f-ctrl)'], fb: ['Retroalimentación', 'var(--f-fb)']
+    ctx: [T.flows.ctx, 'var(--f-ctx)'], res: [T.flows.res, 'var(--f-res)'], handoff: [T.flows.handoff, 'var(--f-handoff)'],
+    human: [T.flows.human, 'var(--f-human)'], ctrl: [T.flows.ctrl, 'var(--f-ctrl)'], fb: [T.flows.fb, 'var(--f-fb)']
   };
-  const PARTS = {
-    input: 'Entrada original', instr: 'Instrucción', state: 'Del estado compartido', result: 'Resultado de otro agente',
-    feedback: 'Retroalimentación', human: 'De una persona', desc: 'Descripciones de agentes', hist: 'Historial'
-  };
+  const PARTS = T.parts;
   const TONES = { ok: 'var(--ok)', bad: 'var(--bad)', warn: 'var(--warn)', info: 'var(--info)', off: 'var(--muted)' };
 
   const steps = P.steps;
@@ -453,23 +449,23 @@ Instrucciones:
   /* ---------- Encabezado y textos ---------- */
   document.title = M.short;
   $('hTitle').textContent = M.num + '. ' + M.title;
-  $('hSub').textContent = 'Escenario: ' + M.escenario + ' · Fuente del ejemplo: ' + M.fuente;
-  $('hCount').textContent = 'Patrón ' + M.num + ' de ' + M.total;
+  $('hSub').textContent = T.scenario + ': ' + M.escenario + ' · ' + T.source + ': ' + M.fuente;
+  $('hCount').textContent = T.patternOf.replace('{n}', M.num).replace('{t}', M.total);
   const navPrev = $('navPrev'), navNext = $('navNext');
   if (M.prev) navPrev.href = M.prev; else navPrev.classList.add('disabled');
   if (M.next) navNext.href = M.next; else navNext.classList.add('disabled');
   $('intro').innerHTML = M.intro + (P.extra ? ' ' + P.extra : '');
-  $('reading').innerHTML = '<h2>Lectura del trace</h2><ul>' + M.lectura.map(l => '<li>' + l + '</li>').join('') + '</ul>' +
-    '<h2 style="margin-top:14px">Referencias</h2><div class="refs">' + M.refs.map(r => '<p>' + r + '</p>').join('') + '</div>';
-  $('boardTab').textContent = P.boardTitle || 'Estado compartido';
+  $('reading').innerHTML = '<h2>' + T.reading + '</h2><ul>' + M.lectura.map(l => '<li>' + l + '</li>').join('') + '</ul>' +
+    '<h2 style="margin-top:14px">' + T.refs + '</h2><div class="refs">' + M.refs.map(r => '<p>' + r + '</p>').join('') + '</div>';
+  $('boardTab').textContent = P.boardTitle || T.sharedState;
 
   /* Leyenda con los tipos que aparecen en este patrón */
   const usedTypes = [...new Set(P.nodes.map(n => n.type))];
   const usedFlows = [...new Set(steps.flatMap(s => (s.flows || []).map(f => f.k || 'ctx')))];
   $('legend').innerHTML =
     usedTypes.map(t => `<span><i style="background:var(--t-${t})"></i>${TYPES[t]}</span>`).join('') +
-    usedFlows.map(k => `<span><i class="ln" style="background:${FLOWS[k][1]}"></i>Flujo: ${FLOWS[k][0].toLowerCase()}</span>`).join('') +
-    (Object.keys(SP).length ? '<span><span class="sp-chip demo">system prompt</span>pasa el cursor o haz clic para ver las instrucciones de cada agente</span>' : '');
+    usedFlows.map(k => `<span><i class="ln" style="background:${FLOWS[k][1]}"></i>${T.flow}: ${FLOWS[k][0].toLowerCase()}</span>`).join('') +
+    (Object.keys(SP).length ? '<span><span class="sp-chip demo">system prompt</span>' + T.spLegend + '</span>' : '');
 
   /* ---------- Escenario ---------- */
   const stage = $('stage');
@@ -483,7 +479,7 @@ Instrucciones:
     html += `<div class="nd t-${n.type}" id="n-${n.id}" style="left:${n.x}%;top:${n.y}%;width:${n.w || 150}px">` +
       `<div class="nd-type">${n.tag || TYPES[n.type]}</div><div class="nd-name${n.mono === false ? '' : ' mono'}">${esc(n.name).replace(/_/g, '_<wbr>')}</div>` +
       (n.desc ? `<div class="nd-desc">${esc(n.desc)}</div>` : '') + `<span class="nd-badge" id="b-${n.id}" hidden></span>` +
-      (SP[n.id] ? `<button class="sp-chip" data-sp="${n.id}" type="button" aria-label="Ver el system prompt de ${esc(n.name)}">system prompt</button>` : '') + '</div>';
+      (SP[n.id] ? `<button class="sp-chip" data-sp="${n.id}" type="button" aria-label="${T.spAria} ${esc(n.name)}">system prompt</button>` : '') + '</div>';
   });
   stage.innerHTML = html;
   const svg = $('svg');
@@ -582,33 +578,33 @@ Instrucciones:
     $('stepTitle').textContent = s.title;
     $('stepText').innerHTML = (s.text || '').split('\n\n').map(p => '<p>' + p + '</p>').join('');
     $('flowList').innerHTML = flows.length
-      ? '<div class="sec-lbl">Flujos de información en este paso</div><ul class="flows">' + flows.map(f => {
+      ? '<div class="sec-lbl">' + T.flowsInStep + '</div><ul class="flows">' + flows.map(f => {
           const [kl, c] = FLOWS[f.k || 'ctx'];
           return `<li><span class="fk" style="--c:${c}">${kl}</span><span><span class="ft mono">${esc(nodeById[f.from].name)} → ${esc(nodeById[f.to].name)}</span>${f.label ? ': ' + esc(f.label) : ''}</span></li>`;
         }).join('') + '</ul>'
       : '';
     const ctxs = s.ctx ? (Array.isArray(s.ctx) ? s.ctx : [s.ctx]) : [];
     $('ctxWrap').innerHTML = ctxs.length
-      ? '<div class="sec-lbl">Contexto que recibe</div>' + ctxs.map(c =>
-          `<div class="ctx"><h4>${c.title ? esc(c.title) : 'Recibe <span class="to">' + esc(nodeById[c.to] ? nodeById[c.to].name : c.to) + '</span>'}` +
+      ? '<div class="sec-lbl">' + T.ctxHead + '</div>' + ctxs.map(c =>
+          `<div class="ctx"><h4>${c.title ? esc(c.title) : T.receives + ' <span class="to">' + esc(nodeById[c.to] ? nodeById[c.to].name : c.to) + '</span>'}` +
           (c.to && SP[c.to] ? ` <button class="sp-chip inline" data-sp="${c.to}" type="button">system prompt</button>` : '') + '</h4>' +
           (c.parts || []).map(p => `<div class="part p-${p.k}"><div class="pl">${PARTS[p.k]}${p.src ? ' <span class="src">· ' + esc(p.src) + '</span>' : ''}</div><pre>${esc(p.text)}</pre></div>`).join('') +
-          (c.miss || []).map(m => `<div class="part miss"><div class="pl">No recibe</div><pre>${esc(m)}</pre></div>`).join('') +
+          (c.miss || []).map(m => `<div class="part miss"><div class="pl">${T.notReceive}</div><pre>${esc(m)}</pre></div>`).join('') +
           '</div>').join('')
       : '';
     const outs = s.out ? (Array.isArray(s.out) ? s.out : [s.out]) : [];
     $('outWrap').innerHTML = outs.map(o =>
-      `<div class="sec-lbl">${esc(o.label || 'Produce')}${o.by ? ' <span class="out-by">· ' + esc(nodeById[o.by] ? nodeById[o.by].name : o.by) + '</span>' : ''}</div><pre class="out">${esc(o.text)}</pre>`).join('');
+      `<div class="sec-lbl">${esc(o.label || T.produces)}${o.by ? ' <span class="out-by">· ' + esc(nodeById[o.by] ? nodeById[o.by].name : o.by) + '</span>' : ''}</div><pre class="out">${esc(o.text)}</pre>`).join('');
 
     /* Tablero */
     $('board').innerHTML = st.board.size
       ? [...st.board.entries()].map(([key, e]) => {
           const isNew = e.at === cur;
           const wasThere = prev && prev.board.has(key);
-          return `<div class="board-row${isNew ? ' new' : ''}">${isNew ? `<span class="tag">${wasThere ? 'ACTUALIZADO' : 'NUEVO'}</span>` : ''}` +
-            `<span class="bk">${esc(key)}</span>${e.by ? `<span class="by">escribe: ${esc(e.by)}</span>` : ''}<pre>${esc(e.val)}</pre></div>`;
+          return `<div class="board-row${isNew ? ' new' : ''}">${isNew ? `<span class="tag">${wasThere ? T.updated : T.isNew}</span>` : ''}` +
+            `<span class="bk">${esc(key)}</span>${e.by ? `<span class="by">${T.writes}: ${esc(e.by)}</span>` : ''}<pre>${esc(e.val)}</pre></div>`;
         }).join('')
-      : `<p class="empty">${esc(P.boardEmpty || 'Todavía vacío.')}</p>`;
+      : `<p class="empty">${esc(P.boardEmpty || T.empty)}</p>`;
 
     /* Trace */
     renderTrace(s, st);
@@ -619,7 +615,7 @@ Instrucciones:
       b.classList.toggle('cur', k === cur);
       b.classList.toggle('done', k < cur);
     });
-    $('counter').textContent = `Paso ${cur + 1} de ${steps.length}`;
+    $('counter').textContent = T.stepOf.replace('{n}', cur + 1).replace('{t}', steps.length);
     $('btnPrev').disabled = cur === 0;
     $('btnNext').disabled = cur === steps.length - 1;
   }
@@ -672,11 +668,11 @@ Instrucciones:
   }
   function play() {
     if (cur >= steps.length - 1) go(0, false);
-    playing = true; $('btnPlay').textContent = 'Pausa';
+    playing = true; $('btnPlay').textContent = T.pause;
     clearTimeout(timer);
     timer = setTimeout(() => { go(cur + 1, true); schedule(); }, 400);
   }
-  function stop() { playing = false; clearTimeout(timer); $('btnPlay').textContent = 'Reproducir'; }
+  function stop() { playing = false; clearTimeout(timer); $('btnPlay').textContent = T.play; }
 
   $('btnPlay').onclick = () => playing ? stop() : play();
   $('btnNext').onclick = () => { stop(); go(cur + 1, true); };
@@ -726,13 +722,13 @@ Instrucciones:
     const tools = d.tools || [];
     return `<div class="sp-head"><div><div class="sp-tag">${esc(n.tag || TYPES[n.type] || '')} · system prompt</div>` +
       `<div class="sp-name mono">${esc(n.name)}</div></div>` +
-      `<button class="sp-close" type="button" aria-label="Cerrar">Cerrar</button></div>` +
+      `<button class="sp-close" type="button" aria-label="${T.close}">${T.close}</button></div>` +
       `<pre class="sp-text">${esc(reflow(d.prompt))}</pre>` +
-      (tools.length ? '<div class="sp-sec">Herramientas que puede invocar</div>' + tools.map(t =>
+      (tools.length ? '<div class="sp-sec">' + T.spTools + '</div>' + tools.map(t =>
         `<div class="sp-tool"><code>${esc(t.sig)}</code><div>${esc(t.desc)}</div></div>`).join('') : '') +
-      (d.salida ? `<div class="sp-sec">Formato de salida esperado</div><pre class="sp-text small">${esc(d.salida)}</pre>` : '') +
-      (d.nota ? `<div class="sp-note"><b>Observa:</b> ${d.nota}</div>` : '') +
-      '<div class="sp-foot">Instrucciones hipotéticas, redactadas para ilustrar el rol del agente. No forman parte del trace original.</div>';
+      (d.salida ? `<div class="sp-sec">${T.spOut}</div><pre class="sp-text small">${esc(d.salida)}</pre>` : '') +
+      (d.nota ? `<div class="sp-note"><b>${T.spNote}</b> ${d.nota}</div>` : '') +
+      '<div class="sp-foot">' + T.spFoot + '</div>';
   }
   function placePop(anchor) {
     const r = anchor.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;

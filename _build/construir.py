@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Construye los demos de patrones de orquestación y la página de índice.
+"""Construye los demos de patrones de orquestación y los índices, en español y en inglés.
 
 Uso:  python3 _build/construir.py   (desde demos_agentes/ o desde cualquier ruta)
 
-Toma de traces_patrones_orquestacion.md el título, la introducción, el trace,
-la lectura y las referencias de cada patrón; toma de _build/patrones/NN.js el
-diagrama y los pasos, y de _build/prompts/NN.js los system prompts
-hipotéticos de cada agente. Genera patrones/NN_slug.html (autocontenidos) e index.html.
+Para cada idioma de LANGS toma del .md de traces el título, la introducción, el
+trace, la lectura y las referencias de cada patrón; de los archivos de datos
+(_build/patrones o _build/en/patterns) el diagrama y los pasos, y de los de
+prompts (_build/prompts o _build/en/prompts) los system prompts hipotéticos.
+Genera las páginas autocontenidas de cada patrón y el índice de cada idioma:
+  es: index.html y patrones/NN_slug.html
+  en: en/index.html y en/patterns/NN_slug.html
 """
 import html
 import json
@@ -15,14 +18,119 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 BUILD = BASE / "_build"
-MD = BASE / "traces_patrones_orquestacion.md"
-OUT = BASE / "patrones"
 
 SLUGS = {
-    1: "secuencial", 2: "routing", 3: "coordinator_dispatcher", 4: "handoff",
-    5: "fan_out_gather", 6: "voting", 7: "seleccion_dinamica", 8: "orchestrator_workers",
-    9: "hierarchical", 10: "magentic", 11: "evaluator_optimizer", 12: "generator_critic",
-    13: "iterative_refinement", 14: "group_chat", 15: "human_in_the_loop", 16: "compuestos",
+    "es": {
+        1: "secuencial", 2: "routing", 3: "coordinator_dispatcher", 4: "handoff",
+        5: "fan_out_gather", 6: "voting", 7: "seleccion_dinamica", 8: "orchestrator_workers",
+        9: "hierarchical", 10: "magentic", 11: "evaluator_optimizer", 12: "generator_critic",
+        13: "iterative_refinement", 14: "group_chat", 15: "human_in_the_loop", 16: "compuestos",
+    },
+    "en": {
+        1: "sequential", 2: "routing", 3: "coordinator_dispatcher", 4: "handoff",
+        5: "fan_out_gather", 6: "voting", 7: "dynamic_selection", 8: "orchestrator_workers",
+        9: "hierarchical", 10: "magentic", 11: "evaluator_optimizer", 12: "generator_critic",
+        13: "iterative_refinement", 14: "group_chat", 15: "human_in_the_loop", 16: "composite",
+    },
+}
+
+# Configuración por idioma: rutas de entrada y salida, marcadores del .md y textos de la interfaz.
+LANGS = {
+    "es": {
+        "md": BASE / "traces_patrones_orquestacion.md",
+        "root": BASE,                      # carpeta del índice
+        "pages": "patrones",               # subcarpeta de los patrones (relativa a root)
+        "data": BUILD / "patrones", "prompts": BUILD / "prompts",
+        "anatomy": "anatomia_agentes.html", "anatomy_hash": ["precios", "fc", "react"],
+        "reading_mark": "**Lectura del trace**", "refs_head": "## Referencias",
+        "ui": {
+            "social": "Redes sociales", "index": "Índice de demos", "prevPattern": "Patrón anterior",
+            "nextPattern": "Patrón siguiente", "theme": "Tema claro / oscuro", "reset": "Reiniciar",
+            "prev": "Anterior", "play": "Reproducir", "pause": "Pausa", "next": "Siguiente",
+            "replay": "Repetir animación", "speed": "Velocidad", "slow": "Lento", "normal": "Normal",
+            "fast": "Rápido", "keys": "Flechas para avanzar o retroceder, espacio para reproducir",
+            "sharedState": "Estado compartido",
+            "fullTrace": "Mostrar el trace completo (las líneas futuras aparecen tenues)",
+            "types": {"input": "Entrada", "agent": "Agente", "code": "Código", "human": "Persona",
+                      "output": "Salida", "state": "Estado", "tool": "Herramienta"},
+            "flows": {"ctx": "Contexto", "res": "Resultado", "handoff": "Handoff", "human": "Persona",
+                      "ctrl": "Control", "fb": "Retroalimentación"},
+            "parts": {"input": "Entrada original", "instr": "Instrucción", "state": "Del estado compartido",
+                      "result": "Resultado de otro agente", "feedback": "Retroalimentación",
+                      "human": "De una persona", "desc": "Descripciones de agentes", "hist": "Historial"},
+            "scenario": "Escenario", "source": "Fuente del ejemplo", "patternOf": "Patrón {n} de {t}",
+            "reading": "Lectura del trace", "refs": "Referencias", "flow": "Flujo",
+            "spLegend": "pasa el cursor o haz clic para ver las instrucciones de cada agente",
+            "spAria": "Ver el system prompt de", "flowsInStep": "Flujos de información en este paso",
+            "ctxHead": "Contexto que recibe", "receives": "Recibe", "notReceive": "No recibe",
+            "produces": "Produce", "updated": "ACTUALIZADO", "isNew": "NUEVO", "writes": "escribe",
+            "empty": "Todavía vacío.", "stepOf": "Paso {n} de {t}", "close": "Cerrar",
+            "spTools": "Herramientas que puede invocar", "spOut": "Formato de salida esperado",
+            "spNote": "Observa:",
+            "spFoot": "Instrucciones hipotéticas, redactadas para ilustrar el rol del agente. No forman parte del trace original.",
+            # Índice
+            "langLabel": "Idioma",
+            "title": "Demos de agentes y orquestación",
+            "lede": "Animaciones paso a paso, construidas a partir de los traces del curso. Primero, la anatomía de un agente individual; después, cómo fluye el contexto entre agentes en cada patrón de orquestación.",
+            "s1": "1. Anatomía de un agente",
+            "s1lead": "Un solo agente por dentro: qué responde el modelo, qué ejecuta el harness, cómo regresan las observaciones y cómo crece el prompt en cada iteración.",
+            "case": "Anatomía · caso",
+            "cases": [["Agente de precios", "Ciclo básico de acción y observación con un motor de búsqueda y una calculadora."],
+                      ["Function Calling", "Estado de un pedido: el modelo devuelve una llamada en JSON y el programa la ejecuta."],
+                      ["ReAct", "Queja por cobro duplicado: pensamiento, acción y observación en cinco iteraciones."]],
+            "s2": "2. Patrones de orquestación multi-agente",
+            "s2lead": "Cada demo muestra el flujo a nivel workflow: qué agente recibe qué contexto, qué escribe en el estado compartido, quién decide el siguiente paso y dónde intervienen el código y las personas. Cada agente tiene un chip <b>system prompt</b>: al pasar el cursor o hacer clic se muestran sus instrucciones y herramientas hipotéticas. Los nombres de personas, empresas, folios y cifras son ficticios.",
+            "pattern": "Patrón", "sourceShort": "Fuente",
+            "convHead": "Convenciones de notación de los traces", "convCols": ["Etiqueta", "Significado"],
+        },
+    },
+    "en": {
+        "md": BASE / "en" / "orchestration_patterns_traces.md",
+        "root": BASE / "en",
+        "pages": "patterns",
+        "data": BUILD / "en" / "patterns", "prompts": BUILD / "en" / "prompts",
+        "anatomy": "agent_anatomy.html", "anatomy_hash": ["prices", "fc", "react"],
+        "reading_mark": "**Reading the trace**", "refs_head": "## References",
+        "ui": {
+            "social": "Social media", "index": "Demo index", "prevPattern": "Previous pattern",
+            "nextPattern": "Next pattern", "theme": "Light / dark theme", "reset": "Restart",
+            "prev": "Previous", "play": "Play", "pause": "Pause", "next": "Next",
+            "replay": "Replay animation", "speed": "Speed", "slow": "Slow", "normal": "Normal",
+            "fast": "Fast", "keys": "Arrow keys to move forward or back, space to play",
+            "sharedState": "Shared state",
+            "fullTrace": "Show the full trace (upcoming lines appear faded)",
+            "types": {"input": "Input", "agent": "Agent", "code": "Code", "human": "Person",
+                      "output": "Output", "state": "State", "tool": "Tool"},
+            "flows": {"ctx": "Context", "res": "Result", "handoff": "Handoff", "human": "Person",
+                      "ctrl": "Control", "fb": "Feedback"},
+            "parts": {"input": "Original input", "instr": "Instruction", "state": "From shared state",
+                      "result": "Result from another agent", "feedback": "Feedback",
+                      "human": "From a person", "desc": "Agent descriptions", "hist": "History"},
+            "scenario": "Scenario", "source": "Example source", "patternOf": "Pattern {n} of {t}",
+            "reading": "Reading the trace", "refs": "References", "flow": "Flow",
+            "spLegend": "hover or click to see each agent's instructions",
+            "spAria": "See the system prompt of", "flowsInStep": "Information flows in this step",
+            "ctxHead": "Context received", "receives": "Receives", "notReceive": "Does not receive",
+            "produces": "Produces", "updated": "UPDATED", "isNew": "NEW", "writes": "written by",
+            "empty": "Still empty.", "stepOf": "Step {n} of {t}", "close": "Close",
+            "spTools": "Tools it can call", "spOut": "Expected output format",
+            "spNote": "Notice:",
+            "spFoot": "Hypothetical instructions, written to illustrate the agent's role. They are not part of the original trace.",
+            "langLabel": "Language",
+            "title": "Agent and orchestration demos",
+            "lede": "Step-by-step animations built from the course traces. First, the anatomy of a single agent; then, how context flows between agents in each orchestration pattern.",
+            "s1": "1. Anatomy of an agent",
+            "s1lead": "A single agent from the inside: what the model answers, what the harness executes, how observations come back and how the prompt grows in each iteration.",
+            "case": "Anatomy · case",
+            "cases": [["Price agent", "Basic action and observation loop with a search engine and a calculator."],
+                      ["Function Calling", "Order status: the model returns a JSON call and the program executes it."],
+                      ["ReAct", "Duplicate charge complaint: thought, action and observation over five iterations."]],
+            "s2": "2. Multi-agent orchestration patterns",
+            "s2lead": "Each demo shows the flow at the workflow level: which agent receives which context, what it writes to the shared state, who decides the next step and where code and people step in. Each agent has a <b>system prompt</b> chip: hover or click to see its hypothetical instructions and tools. The names of people, companies, reference numbers and figures are fictitious.",
+            "pattern": "Pattern", "sourceShort": "Source",
+            "convHead": "Trace notation conventions", "convCols": ["Label", "Meaning"],
+        },
+    },
 }
 
 
@@ -35,8 +143,8 @@ def md_inline(text):
     return t
 
 
-def parse_md():
-    lines = MD.read_text(encoding="utf-8").splitlines()
+def parse_md(cfg):
+    lines = cfg["md"].read_text(encoding="utf-8").splitlines()
     index = {}
     for ln in lines:
         m = re.match(r"^\|\s*(\d+)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|$", ln)
@@ -46,7 +154,7 @@ def parse_md():
     sections, refs = {}, []
     heads = [(i, re.match(r"^## (\d+)\. (.+)$", ln)) for i, ln in enumerate(lines)]
     heads = [(i, m) for i, m in heads if m]
-    ref_start = next(i for i, ln in enumerate(lines) if ln.strip() == "## Referencias")
+    ref_start = next(i for i, ln in enumerate(lines) if ln.strip() == cfg["refs_head"])
     for k, (i, m) in enumerate(heads):
         end = heads[k + 1][0] if k + 1 < len(heads) else ref_start
         body = lines[i + 1:end]
@@ -64,7 +172,7 @@ def parse_md():
         stop = next(x for x in range(start + 1, len(body)) if body[x].strip() == fence)
         trace = "\n".join(body[start + 1:stop])
         # Lectura
-        lect_i = next(x for x, ln in enumerate(body) if ln.strip() == "**Lectura del trace**")
+        lect_i = next(x for x, ln in enumerate(body) if ln.strip() == cfg["reading_mark"])
         lectura = [md_inline(ln[2:].strip()) for ln in body[lect_i + 1:] if ln.startswith("- ")]
         sections[num] = {"title": m.group(2), "intro": md_inline(" ".join(intro)), "trace": trace, "lectura": lectura}
     for ln in lines[ref_start + 1:]:
@@ -87,51 +195,83 @@ def pick_refs(refs, fuente, sec):
     return [md_inline(r) for r in refs if any(r.startswith(k) for k in keys)]
 
 
-def fname(num):
-    return f"{num:02d}_{SLUGS[num]}.html"
+def fname(lang, num):
+    return f"{num:02d}_{SLUGS[lang][num]}.html"
 
 
-def build():
-    index, sections, refs = parse_md()
+def other(lang):
+    return "en" if lang == "es" else "es"
+
+
+def page_url(lang, num, from_lang):
+    """Ruta relativa a la página del patrón num en `lang`, vista desde un patrón en `from_lang`."""
+    cfg = LANGS[lang]
+    up = "../" * (len(LANGS[from_lang]["root"].relative_to(BASE).parts) + 1)
+    return up + "/".join([*cfg["root"].relative_to(BASE).parts, cfg["pages"], fname(lang, num)])
+
+
+LANG_LABEL = {"es": "Español", "en": "English"}
+
+
+def fill_ui(text, ui):
+    return re.sub(r"\{\{t:(\w+)\}\}", lambda m: ui[m.group(1)], text)
+
+
+def build_lang(lang):
+    cfg = LANGS[lang]
+    ui = cfg["ui"]
+    index, sections, refs = parse_md(cfg)
     css = (BUILD / "motor.css").read_text(encoding="utf-8")
     js = (BUILD / "motor.js").read_text(encoding="utf-8")
-    tpl = (BUILD / "plantilla.html").read_text(encoding="utf-8")
-    OUT.mkdir(exist_ok=True)
+    tpl = fill_ui((BUILD / "plantilla.html").read_text(encoding="utf-8"), ui)
+    out = cfg["root"] / cfg["pages"]
+    out.mkdir(parents=True, exist_ok=True)
     nums = sorted(sections)
     built = []
     for num in nums:
-        data_file = BUILD / "patrones" / f"{num:02d}.js"
+        data_file = cfg["data"] / f"{num:02d}.js"
         if not data_file.exists():
-            print(f"  sin datos: {data_file.name}")
+            print(f"  [{lang}] sin datos: {data_file.name}")
             continue
-        prompts_file = BUILD / "prompts" / f"{num:02d}.js"
+        prompts_file = cfg["prompts"] / f"{num:02d}.js"
         sec, idx = sections[num], index[num]
         meta = {
             "num": num, "total": len(nums), "title": sec["title"], "short": idx["patron"],
             "escenario": idx["escenario"], "fuente": idx["fuente"], "intro": sec["intro"],
             "lectura": sec["lectura"], "refs": pick_refs(refs, idx["fuente"], sec), "trace": sec["trace"],
-            "prev": fname(num - 1) if num - 1 in sections else None,
-            "next": fname(num + 1) if num + 1 in sections else None,
+            "prev": fname(lang, num - 1) if num - 1 in sections else None,
+            "next": fname(lang, num + 1) if num + 1 in sections else None,
         }
         meta_js = json.dumps(meta, ensure_ascii=False, indent=1).replace("</", "<\\/")
-        page = (tpl.replace("{{TITLE}}", html.escape(idx["patron"]))
+        ui_js = json.dumps(ui, ensure_ascii=False).replace("</", "<\\/")
+        page = (tpl.replace("{{LANG}}", lang)
+                   .replace("{{OTHER_URL}}", page_url(other(lang), num, lang))
+                   .replace("{{OTHER_LANG}}", other(lang))
+                   .replace("{{OTHER_LABEL}}", LANG_LABEL[other(lang)])
+                   .replace("{{TITLE}}", html.escape(idx["patron"]))
                    .replace("{{CSS}}", css)
+                   .replace("{{UI}}", ui_js)
                    .replace("{{META}}", meta_js)
                    .replace("{{DATA}}", data_file.read_text(encoding="utf-8"))
                    .replace("{{PROMPTS}}", prompts_file.read_text(encoding="utf-8") if prompts_file.exists() else "window.PROMPTS = {};")
                    .replace("{{JS}}", js))
-        (OUT / fname(num)).write_text(page, encoding="utf-8")
+        (out / fname(lang, num)).write_text(page, encoding="utf-8")
         built.append(num)
-        print(f"  {fname(num)}")
-    write_index(index, sections, refs, built)
+    print(f"  [{lang}] {len(built)} patrones en {out.relative_to(BASE)}/")
+    write_index(lang, index, refs, built)
+
+
+def build():
+    for lang in LANGS:
+        build_lang(lang)
 
 
 INDEX_TPL = """<!DOCTYPE html>
-<html lang="es">
+<html lang="{{LANG}}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Demos de agentes</title>
+<title>{{t:title}}</title>
 <style>
 :root { --bg:#f6f7f9; --panel:#fff; --panel2:#f1f3f6; --border:#d9dee5; --text:#1c2430; --muted:#5f6b7a;
   --a:#6d3fd1; --b:#c2700a; --c:#138a5e; --shadow:0 2px 10px rgba(20,30,50,.08); }
@@ -165,6 +305,10 @@ td code { font-size:.8rem; }
 .refs { font-size:.84rem; color:var(--muted); }
 .refs p { margin:0 0 6px; padding-left:22px; text-indent:-22px; }
 a { color:var(--a); }
+.hctl { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.lang { display:inline-flex; align-items:center; gap:6px; font-size:.85rem; color:var(--muted); }
+.lang a { text-decoration:none; color:var(--text); border:1px solid var(--border); background:var(--panel); padding:5px 12px; border-radius:8px; font-weight:600; }
+.lang a[aria-current="page"] { background:var(--text); color:var(--bg); border-color:var(--text); }
 
 .autor { margin: 0 0 14px; padding: 0 0 10px; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; justify-content: space-between; font-size: .88rem; color: var(--muted); }
 .autor b { color: var(--text); }
@@ -177,7 +321,7 @@ a { color:var(--a); }
 <div class="wrap">
 <div class="autor">
   <span><b>Eduardo H. Ramirez, PhD</b></span>
-  <nav aria-label="Redes sociales">
+  <nav aria-label="{{t:social}}">
     <a href="https://www.linkedin.com/in/ehramirez" target="_blank" rel="noopener">LinkedIn</a>
     <a href="https://x.com/eduhrami" target="_blank" rel="noopener">X</a>
     <a href="https://github.com/eduhrami" target="_blank" rel="noopener">GitHub</a>
@@ -185,30 +329,34 @@ a { color:var(--a); }
 </div>
 <header>
   <div>
-    <h1>Demos de agentes y orquestación</h1>
-    <p>Animaciones paso a paso, construidas a partir de los traces del curso. Primero, la anatomía de un agente individual; después, cómo fluye el contexto entre agentes en cada patrón de orquestación.</p>
+    <h1>{{t:title}}</h1>
+    <p>{{t:lede}}</p>
   </div>
-  <button class="tbtn" id="themeBtn" type="button">Tema claro / oscuro</button>
+  <div class="hctl">
+    <div class="lang" role="group" aria-label="{{t:langLabel}}">
+      <span>{{t:langLabel}}</span>
+      {{LANG_SWITCH}}
+    </div>
+    <button class="tbtn" id="themeBtn" type="button">{{t:theme}}</button>
+  </div>
 </header>
 
-<h2>1. Anatomía de un agente</h2>
-<p class="lead">Un solo agente por dentro: qué responde el modelo, qué ejecuta el harness, cómo regresan las observaciones y cómo crece el prompt en cada iteración.</p>
+<h2>{{t:s1}}</h2>
+<p class="lead">{{t:s1lead}}</p>
 <div class="grid">
-  <a class="card" style="--k:var(--b)" href="anatomia_agentes.html#precios"><div class="n">Anatomía · caso 1</div><div class="t">Agente de precios</div><div class="d">Ciclo básico de acción y observación con un motor de búsqueda y una calculadora.</div></a>
-  <a class="card" style="--k:var(--b)" href="anatomia_agentes.html#fc"><div class="n">Anatomía · caso 2</div><div class="t">Function Calling</div><div class="d">Estado de un pedido: el modelo devuelve una llamada en JSON y el programa la ejecuta.</div></a>
-  <a class="card" style="--k:var(--b)" href="anatomia_agentes.html#react"><div class="n">Anatomía · caso 3</div><div class="t">ReAct</div><div class="d">Queja por cobro duplicado: pensamiento, acción y observación en cinco iteraciones.</div></a>
+{{ANATOMY_CARDS}}
 </div>
 
-<h2>2. Patrones de orquestación multi-agente</h2>
-<p class="lead">Cada demo muestra el flujo a nivel workflow: qué agente recibe qué contexto, qué escribe en el estado compartido, quién decide el siguiente paso y dónde intervienen el código y las personas. Cada agente tiene un chip <b>system prompt</b>: al pasar el cursor o hacer clic se muestran sus instrucciones y herramientas hipotéticas. Los nombres de personas, empresas, folios y cifras son ficticios.</p>
+<h2>{{t:s2}}</h2>
+<p class="lead">{{t:s2lead}}</p>
 <div class="grid">
 {{CARDS}}
 </div>
 
-<h2>Convenciones de notación de los traces</h2>
+<h2>{{t:convHead}}</h2>
 {{CONV}}
 
-<h2>Referencias</h2>
+<h2>{{t:refs}}</h2>
 <div class="refs">
 {{REFS}}
 </div>
@@ -225,25 +373,42 @@ document.getElementById('themeBtn').onclick = function () {
 """
 
 
-def write_index(index, sections, refs, built):
+def write_index(lang, index, refs, built):
+    cfg = LANGS[lang]
+    ui = cfg["ui"]
+    to_root = "../" * len(cfg["root"].relative_to(BASE).parts)
+    switch = []
+    for code, c in LANGS.items():
+        href = to_root + "/".join([*c["root"].relative_to(BASE).parts, "index.html"])
+        cur = ' aria-current="page"' if code == lang else ""
+        switch.append(f'<a href="{href}" hreflang="{code}" lang="{code}"{cur}>{LANG_LABEL[code]}</a>')
+    anatomy = []
+    for k, ((title, desc), h) in enumerate(zip(ui["cases"], cfg["anatomy_hash"]), 1):
+        anatomy.append(
+            f'  <a class="card" style="--k:var(--b)" href="{cfg["anatomy"]}#{h}"><div class="n">{ui["case"]} {k}</div>'
+            f'<div class="t">{html.escape(title)}</div><div class="d">{html.escape(desc)}</div></a>')
     cards = []
     for num in sorted(index):
         i = index[num]
         off = "" if num in built else " off"
         cards.append(
-            f'  <a class="card{off}" style="--k:var(--a)" href="patrones/{fname(num)}">'
-            f'<div class="n">Patrón {num}</div><div class="t">{html.escape(i["patron"])}</div>'
-            f'<div class="d">{html.escape(i["escenario"])}</div><span class="f">Fuente: {html.escape(i["fuente"])}</span></a>')
-    md = MD.read_text(encoding="utf-8").splitlines()
+            f'  <a class="card{off}" style="--k:var(--a)" href="{cfg["pages"]}/{fname(lang, num)}">'
+            f'<div class="n">{ui["pattern"]} {num}</div><div class="t">{html.escape(i["patron"])}</div>'
+            f'<div class="d">{html.escape(i["escenario"])}</div><span class="f">{ui["sourceShort"]}: {html.escape(i["fuente"])}</span></a>')
+    md = cfg["md"].read_text(encoding="utf-8").splitlines()
     conv_rows = [ln for ln in md if re.match(r"^\| `", ln)]
-    conv = "<table><thead><tr><th>Etiqueta</th><th>Significado</th></tr></thead><tbody>" + "".join(
+    conv = f"<table><thead><tr><th>{ui['convCols'][0]}</th><th>{ui['convCols'][1]}</th></tr></thead><tbody>" + "".join(
         "<tr>" + "".join(f"<td>{md_inline(c.strip())}</td>" for c in r.strip("|").split("|")) + "</tr>" for r in conv_rows
     ) + "</tbody></table>"
-    page = (INDEX_TPL.replace("{{CARDS}}", "\n".join(cards))
-                     .replace("{{CONV}}", conv)
-                     .replace("{{REFS}}", "\n".join(f"<p>{md_inline(r)}</p>" for r in refs)))
-    (BASE / "index.html").write_text(page, encoding="utf-8")
-    print("  index.html")
+    page = (fill_ui(INDEX_TPL, ui)
+            .replace("{{LANG}}", lang)
+            .replace("{{LANG_SWITCH}}", "\n      ".join(switch))
+            .replace("{{ANATOMY_CARDS}}", "\n".join(anatomy))
+            .replace("{{CARDS}}", "\n".join(cards))
+            .replace("{{CONV}}", conv)
+            .replace("{{REFS}}", "\n".join(f"<p>{md_inline(r)}</p>" for r in refs)))
+    (cfg["root"] / "index.html").write_text(page, encoding="utf-8")
+    print(f"  [{lang}] {(cfg['root'] / 'index.html').relative_to(BASE)}")
 
 
 if __name__ == "__main__":

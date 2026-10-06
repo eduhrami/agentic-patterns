@@ -4,6 +4,10 @@ Demos interactivos para entender, paso a paso, cómo funciona un agente LLM por 
 
 **Úsalos en línea:** [https://eduhrami.github.io/demos-agentes/](https://eduhrami.github.io/demos-agentes/)
 
+Disponibles en español y en inglés. En el índice se elige el idioma, y cada demo tiene un botón para cambiar a su versión en el otro idioma.
+
+> **English version:** [https://eduhrami.github.io/demos-agentes/en/](https://eduhrami.github.io/demos-agentes/en/). Interactive demos that show, step by step, how an LLM agent works on the inside and how several agents coordinate in 16 orchestration patterns. Traces, system prompts and the interface are fully translated.
+
 Autor: **Eduardo H. Ramirez, PhD** · [LinkedIn](https://www.linkedin.com/in/ehramirez) · [X](https://x.com/eduhrami) · [GitHub](https://github.com/eduhrami)
 
 ## Qué contiene
@@ -58,14 +62,20 @@ Las páginas no tienen dependencias externas. También funcionan sin conexión: 
 ## Estructura del repositorio
 
 ```
-index.html                 Índice de todos los demos
-anatomia_agentes.html      Demo de anatomía de un agente
-patrones/                  Los 16 demos de patrones (generados)
-*.md                       Traces fuente de cada demo
+index.html                 Índice en español
+anatomia_agentes.html      Demo de anatomía de un agente (español)
+patrones/                  Los 16 demos de patrones en español (generados)
+*.md                       Traces fuente en español
+en/
+    index.html             Índice en inglés
+    agent_anatomy.html     Demo de anatomía en inglés
+    patterns/              Los 16 demos de patrones en inglés (generados)
+    *.md                   Traces fuente traducidos al inglés
 _build/                    Motor, datos de cada patrón, system prompts y scripts
+    en/                    Datos y system prompts en inglés
 ```
 
-Para regenerar y validar los demos de patrones después de editar los traces o los datos:
+Para regenerar y validar los demos de patrones (ambos idiomas) después de editar los traces o los datos:
 
 ```
 python3 _build/construir.py

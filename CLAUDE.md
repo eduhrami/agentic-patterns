@@ -16,28 +16,58 @@ Material del curso de Prompt Engineering y Agentes (TEC de Monterrey / TLG y Cur
 
 ## Estructura
 
+El sitio es bilingüe: español en la raíz e inglés en `en/`. El motor es uno solo.
+
 ```
-index.html                     Índice: tarjetas a los 3 casos de anatomía y a los 16 patrones (GENERADO)
-anatomia_agentes.html          Demo de anatomía, escrito a mano (no lo genera el script)
-patrones/NN_slug.html          16 páginas autocontenidas (GENERADAS, no editar a mano)
-*.md                           Traces fuente: la única fuente de verdad del contenido
+index.html                     Índice en español con selector de idioma (GENERADO)
+anatomia_agentes.html          Demo de anatomía en español, escrito a mano
+patrones/NN_slug.html          16 páginas en español (GENERADAS, no editar a mano)
+*.md                           Traces fuente en español
+en/
+    index.html                 Índice en inglés con selector de idioma (GENERADO)
+    agent_anatomy.html         Demo de anatomía en inglés, escrito a mano
+    patterns/NN_slug.html      16 páginas en inglés (GENERADAS)
+    *.md                       Traces fuente traducidos al inglés
 _build/
-    construir.py               Genera patrones/*.html e index.html
-    verificar.py               Pruebas con Playwright sobre las páginas generadas
-    plantilla.html             Esqueleto HTML de cada patrón
+    construir.py               Genera los patrones y los índices de ambos idiomas
+    verificar.py               Pruebas con Playwright sobre las páginas de ambos idiomas
+    plantilla.html             Esqueleto HTML de cada patrón, con marcadores {{t:clave}}
     motor.css / motor.js       Motor común (diagrama, animación, paneles, popovers)
-    patrones/NN.js             Diagrama y pasos de cada patrón (window.PATRON)
-    prompts/NN.js              System prompts hipotéticos de cada agente (window.PROMPTS)
+    patrones/NN.js             Diagrama y pasos de cada patrón en español (window.PATRON)
+    prompts/NN.js              System prompts en español (window.PROMPTS)
+    en/patterns/NN.js          Diagrama y pasos en inglés
+    en/prompts/NN.js           System prompts en inglés
 .nojekyll                      Necesario para que GitHub Pages sirva la carpeta _build/
 ```
 
+## Idiomas
+- **Cada cambio de contenido se hace en ambos idiomas.** Si se edita un trace, un paso o un prompt en
+  español, se aplica el mismo cambio en su equivalente en inglés (y viceversa). `verificar.py` detecta
+  marcas de trace rotas y prompts faltantes en ambos idiomas, pero no detecta diferencias de contenido.
+- **Textos de la interfaz:** viven en el diccionario `LANGS[lang]["ui"]` de `construir.py`. El motor
+  (`motor.js`) los recibe como `window.UI` y la plantilla los usa como `{{t:clave}}`. No escribir
+  textos visibles directamente en `motor.js` ni en `plantilla.html`.
+- **Rutas y nombres de archivo:** `SLUGS[lang]` en `construir.py`. Cada página tiene un botón al
+  mismo patrón en el otro idioma, calculado por el script.
+- **Identificadores en inglés:** en la versión en inglés, los nombres de agentes, herramientas,
+  parámetros y claves del estado también están traducidos (por ejemplo `selector_plantilla` →
+  `template_selector`). Folios, nombres propios, cifras y monedas (MXN) se conservan.
+- **Marcas `tr` en inglés:** se refieren a las líneas del trace en inglés
+  (`en/orchestration_patterns_traces.md`), no a las del español.
+- **Anatomía:** `anatomia_agentes.html` y `en/agent_anatomy.html` son dos archivos escritos a mano con
+  el mismo motor y datos traducidos. Un cambio de motor o de diseño se aplica en ambos. El enlace de
+  idioma conserva el caso abierto (`#precios` ↔ `#prices`, `#fc`, `#react`).
+- **Inglés:** en las páginas en inglés, prosa directa en segunda persona (you); las mismas reglas de
+  estilo (sin em-dashes, sin emojis, sin frases de encuadre).
+
 ## Fuentes de verdad
-- `traces_patrones_orquestacion.md`: título, introducción, trace, "Lectura del trace" y referencias
-  de cada patrón, más la tabla del índice y las convenciones de notación. `construir.py` los extrae
-  directamente; **no copiar esos textos a los archivos `.js`**.
+- `traces_patrones_orquestacion.md` (y su traducción `en/orchestration_patterns_traces.md`): título,
+  introducción, trace, "Lectura del trace" / "Reading the trace" y referencias de cada patrón, más la
+  tabla del índice y las convenciones de notación. `construir.py` los extrae directamente; **no copiar
+  esos textos a los archivos `.js`**.
 - `Agente de precios traces de ejemplo.md` y `Function Calling vs. ReAct traces de ejemplo.md`:
-  fuente del demo de anatomía. Sus datos están transcritos dentro de `anatomia_agentes.html`;
-  si cambian los .md, actualizar el HTML a mano.
+  fuente del demo de anatomía (sus traducciones están en `en/`). Sus datos están transcritos dentro
+  de `anatomia_agentes.html` y `en/agent_anatomy.html`; si cambian los .md, actualizar ambos HTML a mano.
 - Basarse **exclusivamente** en los traces. No inventar datos, cifras ni pasos que no estén ahí.
   Donde el trace no especifica algo (por ejemplo, qué contexto exacto recibe un agente), elegir la
   opción más neutral y avisar a Eduardo.
@@ -45,7 +75,7 @@ _build/
 ## Flujo de trabajo
 
 ```
-python3 _build/construir.py      # regenera patrones/*.html e index.html
+python3 _build/construir.py      # regenera los patrones y los índices de ambos idiomas
 python3 _build/verificar.py      # valida (requiere playwright + chromium)
 ```
 
@@ -53,9 +83,11 @@ Después de cualquier cambio en `_build/` o en `traces_patrones_orquestacion.md`
 verificar y revisar visualmente al menos una página afectada (captura con Playwright en tema claro
 y oscuro, y en 390 px de ancho).
 
-Para agregar un patrón nuevo: agregar la sección `## N. Título` en el .md (con párrafo de
-introducción, bloque ```text con el trace y **Lectura del trace**), su fila en la tabla de índice,
-el slug en `SLUGS` de `construir.py`, y los archivos `_build/patrones/NN.js` y `_build/prompts/NN.js`.
+Para agregar un patrón nuevo, en **ambos idiomas**: agregar la sección `## N. Título` en cada .md
+(con párrafo de introducción, bloque ```text con el trace y **Lectura del trace** / **Reading the
+trace**), su fila en la tabla de índice, el slug en `SLUGS["es"]` y `SLUGS["en"]` de `construir.py`, y
+los archivos `_build/patrones/NN.js`, `_build/prompts/NN.js`, `_build/en/patterns/NN.js` y
+`_build/en/prompts/NN.js`.
 
 ## Formato de datos de un patrón (`_build/patrones/NN.js`)
 

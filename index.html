@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Demos de agentes</title>
+<title>Demos de agentes y orquestación</title>
 <style>
 :root { --bg:#f6f7f9; --panel:#fff; --panel2:#f1f3f6; --border:#d9dee5; --text:#1c2430; --muted:#5f6b7a;
   --a:#6d3fd1; --b:#c2700a; --c:#138a5e; --shadow:0 2px 10px rgba(20,30,50,.08); }
@@ -37,6 +37,10 @@ td code { font-size:.8rem; }
 .refs { font-size:.84rem; color:var(--muted); }
 .refs p { margin:0 0 6px; padding-left:22px; text-indent:-22px; }
 a { color:var(--a); }
+.hctl { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.lang { display:inline-flex; align-items:center; gap:6px; font-size:.85rem; color:var(--muted); }
+.lang a { text-decoration:none; color:var(--text); border:1px solid var(--border); background:var(--panel); padding:5px 12px; border-radius:8px; font-weight:600; }
+.lang a[aria-current="page"] { background:var(--text); color:var(--bg); border-color:var(--text); }
 
 .autor { margin: 0 0 14px; padding: 0 0 10px; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; justify-content: space-between; font-size: .88rem; color: var(--muted); }
 .autor b { color: var(--text); }
@@ -60,7 +64,14 @@ a { color:var(--a); }
     <h1>Demos de agentes y orquestación</h1>
     <p>Animaciones paso a paso, construidas a partir de los traces del curso. Primero, la anatomía de un agente individual; después, cómo fluye el contexto entre agentes en cada patrón de orquestación.</p>
   </div>
-  <button class="tbtn" id="themeBtn" type="button">Tema claro / oscuro</button>
+  <div class="hctl">
+    <div class="lang" role="group" aria-label="Idioma">
+      <span>Idioma</span>
+      <a href="index.html" hreflang="es" lang="es" aria-current="page">Español</a>
+      <a href="en/index.html" hreflang="en" lang="en">English</a>
+    </div>
+    <button class="tbtn" id="themeBtn" type="button">Tema claro / oscuro</button>
+  </div>
 </header>
 
 <h2>1. Anatomía de un agente</h2>

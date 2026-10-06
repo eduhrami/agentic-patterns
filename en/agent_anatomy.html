@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent anatomy</title>
+<style>
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --panel2: #f1f3f6;
+  --border: #d9dee5;
+  --text: #1c2430;
+  --muted: #5f6b7a;
+  --user: #4b6584;
+  --harness: #c2700a;
+  --model: #6d3fd1;
+  --tool: #138a5e;
+  --memory: #0e7f9a;
+  --system: #59636f;
+  --new: #fff4cc;
+  --new-border: #e0b100;
+  --code-bg: #f4f5f8;
+  --shadow: 0 2px 10px rgba(20, 30, 50, .08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --panel: #1a2029; --panel2: #212834; --border: #313a48;
+    --text: #e6eaf0; --muted: #9aa5b4;
+    --user: #8fa9cc; --harness: #f0a541; --model: #a88bf5; --tool: #4cc995;
+    --memory: #4cc3df; --system: #a3adb9;
+    --new: #3b3417; --new-border: #c9a227; --code-bg: #151a22;
+    --shadow: 0 2px 12px rgba(0, 0, 0, .4);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --panel: #1a2029; --panel2: #212834; --border: #313a48;
+  --text: #e6eaf0; --muted: #9aa5b4;
+  --user: #8fa9cc; --harness: #f0a541; --model: #a88bf5; --tool: #4cc995;
+  --memory: #4cc3df; --system: #a3adb9;
+  --new: #3b3417; --new-border: #c9a227; --code-bg: #151a22;
+  --shadow: 0 2px 12px rgba(0, 0, 0, .4);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5; font-size: 15px;
+}
+.wrap { max-width: 1280px; margin: 0 auto; padding: 18px 16px 48px; }
+code, pre, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+
+/* Encabezado */
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+header h1 { font-size: 1.45rem; margin: 0; letter-spacing: -.01em; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 760px; }
+.theme-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: .85rem; }
+
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 12px; }
+.tab {
+  background: var(--panel); border: 1px solid var(--border); color: var(--muted);
+  padding: 9px 14px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: .92rem;
+}
+.tab small { display: block; font-weight: 400; font-size: .75rem; }
+.tab.active { color: var(--text); border-color: var(--text); box-shadow: var(--shadow); }
+
+.case-intro { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; color: var(--muted); font-size: .92rem; }
+.case-intro b { color: var(--text); }
+
+/* Leyenda */
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .8rem; color: var(--muted); margin: 0 0 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+/* Escenario */
+.stage {
+  position: relative; background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+  padding: 18px; box-shadow: var(--shadow);
+}
+.stage svg.links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.links line { stroke: var(--border); stroke-width: 2; }
+.links line.active { stroke: var(--c); stroke-width: 3; stroke-dasharray: 7 6; animation: march .6s linear infinite; }
+@keyframes march { to { stroke-dashoffset: -13; } }
+
+.grid {
+  position: relative; z-index: 1; display: grid; gap: 22px 34px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.1fr) minmax(0, 1.1fr);
+  grid-template-areas: "user harness model" "tools tools tools";
+}
+.node {
+  background: var(--panel); border: 2px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  transition: border-color .25s, box-shadow .25s; min-width: 0;
+}
+.node h3 { margin: 0 0 2px; font-size: .95rem; display: flex; align-items: center; gap: 8px; }
+.node h3 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+.node .role { font-size: .76rem; color: var(--muted); margin-bottom: 8px; }
+.node.on { border-color: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 18%, transparent); }
+.node.pulse { animation: pulse .7s ease-out; }
+@keyframes pulse { 0% { transform: scale(1); } 40% { transform: scale(1.025); } 100% { transform: scale(1); } }
+
+#node-user { grid-area: user; --c: var(--user); align-self: start; }
+#node-harness { grid-area: harness; --c: var(--harness); }
+#node-model { grid-area: model; --c: var(--model); align-self: start; }
+.tools-row { grid-area: tools; display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.tool { --c: var(--tool); flex: 1 1 180px; max-width: 290px; }
+.tool .io { font-size: .76rem; margin-top: 4px; }
+.tool .io div { white-space: pre-wrap; word-break: break-word; }
+.tool .io .lbl { color: var(--muted); font-weight: 600; }
+
+.bubble {
+  background: var(--panel2); border-radius: 10px; padding: 7px 10px; font-size: .82rem; margin-top: 6px;
+  white-space: pre-wrap; word-break: break-word;
+}
+.bubble.final { border-left: 3px solid var(--user); }
+.bubble.out { border-left: 3px solid var(--model); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .76rem; }
+.empty { color: var(--muted); font-size: .8rem; font-style: italic; }
+
+.llm-core {
+  display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; border-radius: 10px;
+  background: color-mix(in srgb, var(--model) 12%, var(--panel)); font-weight: 700; color: var(--model);
+}
+.thinking span { width: 7px; height: 7px; background: var(--model); border-radius: 50%; display: inline-block; animation: blink 1s infinite; }
+.thinking span:nth-child(2) { animation-delay: .2s; } .thinking span:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 100% { opacity: .2; } 50% { opacity: 1; } }
+
+.hstatus { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--panel2); border-radius: 8px; padding: 6px 10px; font-size: .82rem; margin-bottom: 8px; }
+.iter-badge { background: var(--harness); color: var(--panel); border-radius: 6px; padding: 1px 8px; font-weight: 700; font-size: .75rem; }
+.hcols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sub { border: 1.5px dashed var(--border); border-radius: 10px; padding: 8px 10px; min-width: 0; transition: border-color .25s, background .25s; }
+.sub h4 { margin: 0 0 4px; font-size: .8rem; display: flex; align-items: center; gap: 6px; }
+.sub h4 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.sub .txt { font-size: .74rem; color: var(--muted); white-space: pre-wrap; max-height: 150px; overflow: auto; }
+#sub-system { --c: var(--system); }
+#sub-memory { --c: var(--memory); }
+.sub.on { border-style: solid; border-color: var(--c); background: color-mix(in srgb, var(--c) 7%, transparent); }
+.mem-item { font-size: .74rem; background: var(--panel2); border-left: 3px solid var(--memory); border-radius: 6px; padding: 4px 7px; margin-top: 5px; white-space: pre-wrap; word-break: break-word; }
+.mem-item.fresh { animation: slidein .6s ease-out both; animation-delay: var(--delay, 0ms); background: var(--new); }
+@keyframes slidein { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+/* Paquete animado */
+.packet {
+  position: absolute; z-index: 5; left: 0; top: 0; pointer-events: none;
+  background: var(--c); color: var(--panel); font-size: .74rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .25); white-space: nowrap;
+}
+
+/* Controles */
+.controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 14px 0 8px; }
+.btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: .88rem; font-weight: 600; }
+.btn:hover { border-color: var(--text); }
+.btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+.btn:disabled { opacity: .4; cursor: default; }
+select.btn { font-weight: 400; }
+.counter { color: var(--muted); font-size: .85rem; margin-left: auto; }
+.timeline { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: flex-end; margin-bottom: 14px; }
+.tl-group { display: flex; flex-direction: column; gap: 3px; }
+.tl-group .tl-lbl { font-size: .68rem; color: var(--muted); }
+.tl-dots { display: flex; gap: 3px; }
+.tl-dot { width: 22px; height: 10px; border-radius: 3px; border: none; background: var(--c); opacity: .3; cursor: pointer; padding: 0; }
+.tl-dot.done { opacity: .7; }
+.tl-dot.cur { opacity: 1; outline: 2px solid var(--text); outline-offset: 1px; }
+
+/* Paneles inferiores */
+.panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 14px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); min-width: 0; }
+.actor-badge { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--panel); background: var(--c); border-radius: 6px; padding: 2px 8px; }
+.step-title { font-size: 1.12rem; margin: 8px 0 6px; }
+.step-text { margin: 0 0 10px; }
+.step-text p { margin: 0 0 8px; }
+.step-text ul { margin: 0 0 8px; padding-left: 20px; }
+.payload-lbl { font-size: .78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-top: 8px; }
+pre.payload { background: var(--code-bg); border: 1px solid var(--border); border-left: 4px solid var(--c); border-radius: 8px; padding: 10px 12px; font-size: .8rem; white-space: pre-wrap; word-break: break-word; margin: 4px 0 0; }
+
+.ptabs { display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
+.ptab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); padding: 6px 10px; cursor: pointer; font-weight: 600; font-size: .88rem; }
+.ptab.active { color: var(--text); border-bottom-color: var(--text); }
+.pview { display: none; }
+.pview.active { display: block; }
+.seg { border: 1px solid var(--border); border-left: 4px solid var(--c); border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; position: relative; }
+.seg .seg-lbl { font-size: .7rem; font-weight: 700; color: var(--c); text-transform: uppercase; letter-spacing: .04em; }
+.seg pre { margin: 2px 0 0; font-size: .77rem; white-space: pre-wrap; word-break: break-word; }
+.seg.new { background: var(--new); border-color: var(--new-border); border-left-color: var(--c); }
+.seg .new-tag { position: absolute; right: 8px; top: 6px; font-size: .64rem; font-weight: 800; background: var(--new-border); color: #1c1600; border-radius: 4px; padding: 0 6px; }
+.seg.k-system { --c: var(--system); } .seg.k-tools { --c: var(--tool); } .seg.k-user { --c: var(--user); }
+.seg.k-memory { --c: var(--memory); } .seg.k-assistant { --c: var(--model); } .seg.k-ask { --c: var(--harness); }
+.psize { font-size: .8rem; color: var(--muted); margin-top: 8px; }
+.pbar { height: 8px; background: var(--panel2); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+.pbar div { height: 100%; background: var(--harness); transition: width .5s; }
+pre.trace { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: .76rem; max-height: 470px; overflow: auto; white-space: pre-wrap; margin: 0; }
+pre.trace .past { color: var(--muted); }
+pre.trace .now { background: var(--new); color: var(--text); display: block; border-left: 3px solid var(--new-border); padding-left: 6px; }
+
+.notes { margin-top: 14px; }
+.notes h2 { font-size: 1.05rem; margin: 0 0 8px; }
+.notes ul { margin: 0; padding-left: 20px; }
+.notes li { margin-bottom: 5px; }
+table.cmp { width: 100%; border-collapse: collapse; font-size: .85rem; margin-top: 12px; }
+table.cmp th, table.cmp td { border: 1px solid var(--border); padding: 7px 9px; text-align: left; vertical-align: top; }
+table.cmp th { background: var(--panel2); }
+.kbd { font-size: .78rem; color: var(--muted); }
+
+.autor { margin: 0 0 14px; padding: 0 0 10px; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; justify-content: space-between; font-size: .88rem; color: var(--muted); }
+.autor b { color: var(--text); }
+.autor nav { display: flex; gap: 14px; flex-wrap: wrap; }
+.autor a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--border); }
+.autor a:hover { color: var(--text); border-bottom-color: var(--text); }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; grid-template-areas: "user" "harness" "model" "tools"; gap: 22px; }
+  .panels { grid-template-columns: 1fr; }
+  .hcols { grid-template-columns: 1fr; }
+  .tool { max-width: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="autor">
+  <span><b>Eduardo H. Ramirez, PhD</b></span>
+  <nav aria-label="Social media">
+    <a href="https://www.linkedin.com/in/ehramirez" target="_blank" rel="noopener">LinkedIn</a>
+    <a href="https://x.com/eduhrami" target="_blank" rel="noopener">X</a>
+    <a href="https://github.com/eduhrami" target="_blank" rel="noopener">GitHub</a>
+  </nav>
+</div>
+  <header>
+    <div>
+      <h1>Anatomy of an agent, step by step</h1>
+      <p>What the model answers, what the harness executes, how observations come back and how the prompt grows in each iteration.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="theme-btn" href="index.html" style="text-decoration:none">Demo index</a><a class="theme-btn" id="langLink" href="../anatomia_agentes.html" hreflang="es" lang="es" style="text-decoration:none">Español</a><button class="theme-btn" id="themeBtn" type="button">Light / dark theme</button></div>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+  <div class="case-intro" id="caseIntro"></div>
+
+  <div class="legend">
+    <span><i style="background:var(--user)"></i>User</span>
+    <span><i style="background:var(--harness)"></i>Harness (agent program)</span>
+    <span><i style="background:var(--model)"></i>Model (LLM)</span>
+    <span><i style="background:var(--tool)"></i>Tools</span>
+    <span><i style="background:var(--memory)"></i>Memory</span>
+    <span><i style="background:var(--system)"></i>Instructions</span>
+  </div>
+
+  <section class="stage" id="stage">
+    <svg class="links" id="links"></svg>
+    <div class="grid">
+      <div class="node" id="node-user">
+        <h3><span class="dot"></span>User</h3>
+        <div class="role">States the request and receives the final answer.</div>
+        <div id="userBox"></div>
+      </div>
+
+      <div class="node" id="node-harness">
+        <h3><span class="dot"></span>Harness: the agent program</h3>
+        <div class="role">Runs the loop: builds the prompt, calls the model, reads its response, calls tools and stores observations.</div>
+        <div class="hstatus"><span class="iter-badge" id="iterBadge">Start</span><span id="hStatus"></span></div>
+        <div class="hcols">
+          <div class="sub" id="sub-system">
+            <h4><span class="dot"></span><span id="sysTitle">Instructions</span></h4>
+            <div class="txt mono" id="sysText"></div>
+          </div>
+          <div class="sub" id="sub-memory">
+            <h4><span class="dot"></span><span id="memTitle">Memory</span></h4>
+            <div id="memList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="node" id="node-model">
+        <h3><span class="dot"></span>Model (LLM)</h3>
+        <div class="role">Receives text and returns text. It does not run tools or remember previous iterations on its own.</div>
+        <div class="llm-core" id="llmCore">LLM</div>
+        <div id="modelOut"></div>
+      </div>
+
+      <div class="tools-row" id="toolsRow"></div>
+    </div>
+  </section>
+
+  <div class="controls">
+    <button class="btn" id="btnReset" type="button">Restart</button>
+    <button class="btn" id="btnPrev" type="button">Previous</button>
+    <button class="btn primary" id="btnPlay" type="button">Play</button>
+    <button class="btn" id="btnNext" type="button">Next</button>
+    <select class="btn" id="speed" aria-label="Speed">
+      <option value="0.6">Slow</option>
+      <option value="1" selected>Normal</option>
+      <option value="1.7">Fast</option>
+    </select>
+    <span class="kbd">Keyboard: arrow keys to move forward or back, space to play</span>
+    <span class="counter" id="counter"></span>
+  </div>
+  <div class="timeline" id="timeline"></div>
+
+  <div class="panels">
+    <section class="panel" id="stepPanel">
+      <span class="actor-badge" id="actorBadge"></span>
+      <h2 class="step-title" id="stepTitle"></h2>
+      <div class="step-text" id="stepText"></div>
+      <div id="payloadWrap"></div>
+    </section>
+    <section class="panel">
+      <div class="ptabs">
+        <button class="ptab active" data-view="prompt" type="button">Prompt received by the model</button>
+        <button class="ptab" data-view="trace" type="button">Trace</button>
+      </div>
+      <div class="pview active" id="view-prompt"></div>
+      <div class="pview" id="view-trace"><pre class="trace" id="traceBox"></pre></div>
+    </section>
+  </div>
+
+  <section class="panel notes" id="notes"></section>
+</div>
+
+<script>
+/* ============================================================
+   Case data (taken from the Markdown traces)
+   ============================================================ */
+
+const ACTORS = {
+  intro:   { name: 'Anatomy', color: 'var(--system)' },
+  user:    { name: 'User', color: 'var(--user)' },
+  harness: { name: 'Harness executes', color: 'var(--harness)' },
+  model:   { name: 'Model responds', color: 'var(--model)' },
+  tool:    { name: 'Tool executes', color: 'var(--tool)' },
+  memory:  { name: 'Memory update', color: 'var(--memory)' }
+};
+
+/* ---------- Case 1: price agent ---------- */
+const P_SYS = `You are an agent that reports the price of any product in the
+currency the user requests.
+To do so, search for the product's price; if it is in a currency
+other than the one requested, search for the exchange rate between
+both currencies and use the calculator to do the conversion.
+Available tools:
+    - search engine: searches for information on the internet.
+    - calculator: evaluates arithmetic operations.
+At each step reply with one of these two options:
+    Action: <tool>               Input: <text for the tool>
+    Action: goal achieved        Answer: <answer for the user>`;
+const P_OBJ = 'How much does the Nintendo Switch 2 console cost in Mexican pesos?';
+const P_OBS = [
+  'Nintendo Switch 2: 449.99 USD at the official United States store',
+  '1 USD = 18.40 MXN',
+  '8279.816'
+];
+const P_RESP = 'The Nintendo Switch 2 costs 449.99 dollars, which is\nabout 8,279.82 Mexican pesos at today\'s exchange rate\n(18.40 pesos per dollar).';
+
+function pPromptText(n) {
+  const obs = n === 0 ? 'Observations: none'
+    : 'Observations:\n' + P_OBS.slice(0, n).map((o, i) => `    ${i + 1}. ${o}`).join('\n');
+  return `Goal: ${P_OBJ}\n${obs}\nWhat is your next action?`;
+}
+function pCtx(n) {
+  const segs = [
+    { k: 'system', lbl: 'System instructions (the same in every iteration)', text: P_SYS },
+    { k: 'user', lbl: 'Goal', text: P_OBJ }
+  ];
+  if (n === 0) segs.push({ k: 'memory', lbl: 'Observations', text: 'none' });
+  P_OBS.slice(0, n).forEach((o, i) => segs.push({ k: 'memory', lbl: `Observation ${i + 1}`, text: o, isNew: i === n - 1 }));
+  segs.push({ k: 'ask', lbl: 'Harness question', text: 'What is your next action?' });
+  return segs;
+}
+
+const P_ITERS = [
+  { tool: 'search', toolName: 'search engine', input: 'Nintendo Switch 2 price in dollars',
+    obs: 'Nintendo Switch 2: 449.99 USD at the official\nUnited States store', memText: 'Nintendo Switch 2: 449.99 USD',
+    why: 'With zero observations, the first thing it needs is the product\'s price.' },
+  { tool: 'search', toolName: 'search engine', input: 'dollar to Mexican peso exchange rate today',
+    obs: '1 USD = 18.40 MXN', memText: '1 USD = 18.40 MXN',
+    why: 'Observation 1 says the price is in dollars, a currency other than the one requested. The instructions tell it to search for the exchange rate. It uses the same tool for another purpose.' },
+  { tool: 'calc', toolName: 'calculator', input: '449.99 × 18.40',
+    obs: '8279.816', memText: '8279.816',
+    why: 'It already has the price and the exchange rate in its observations. It does not do the multiplication itself: it asks the calculator to do it.' }
+];
+
+function buildPrecios() {
+  const s = [];
+  s.push({
+    actor: 'intro', title: 'The parts of the price agent',
+    text: `<p>Before running anything, the agent already has five parts:</p>
+<ul>
+<li><b>Model (LLM):</b> decides the next action. It only produces text.</li>
+<li><b>Harness:</b> the program that runs the loop, calls the model and executes the tools.</li>
+<li><b>System instructions:</b> tell the model which tools exist and in what format to reply.</li>
+<li><b>Memory:</b> the list of accumulated observations. It starts empty.</li>
+<li><b>Tools:</b> a search engine and a calculator.</li>
+</ul>
+<p>The price and the exchange rate are illustrative values for the simulation.</p>`,
+    status: 'Waiting for the user\'s goal', iter: 'Start',
+    trace: `GOAL: "${P_OBJ}"\nTOOLS: search engine, calculator\nOBSERVATIONS: none\n`,
+    hl: ['sub-system', 'sub-memory']
+  });
+  s.push({
+    actor: 'user', from: 'user', to: 'harness', packet: 'Goal',
+    title: 'The user states the goal',
+    text: '<p>The user writes their question. The harness stores it as the <b>goal</b> and starts the loop with empty memory.</p>',
+    payloadLbl: 'Goal', payload: P_OBJ,
+    userMsg: P_OBJ, status: 'Goal received. Observations: none', iter: 'Start'
+  });
+  P_ITERS.forEach((it, i) => {
+    const n = i + 1;
+    s.push({
+      actor: 'harness', from: 'harness', to: 'model', packet: 'Prompt',
+      title: `Iteration ${n}: the harness builds the prompt and calls the model`,
+      text: n === 1
+        ? '<p>The harness joins the system instructions, the goal and the observations (none so far) into a single prompt and sends it to the LLM.</p>'
+        : `<p>The harness sends the same instructions and the same goal again, now with ${i} observation${i > 1 ? 's' : ''} in the list. The prompt grows: the list of observations is the only thing the model "remembers" from the previous steps.</p>`,
+      payloadLbl: 'Prompt to the LLM', payload: pPromptText(i),
+      ctx: pCtx(i), thinking: true, status: 'Waiting for the model\'s response', iter: `Iteration ${n}`,
+      trace: `\nITERATION ${n}\n    The LLM analyzes the goal and the observations.\n`,
+      hl: ['sub-system', 'sub-memory']
+    });
+    s.push({
+      actor: 'model', from: 'model', to: 'harness', packet: 'Text',
+      title: `Iteration ${n}: the model replies with an action`,
+      text: `<p>${it.why}</p><p>The model does not run the tool: it writes text in the format the instructions asked for.</p>`,
+      payloadLbl: 'LLM response', payload: `Action:       ${it.toolName}\nInput:        ${it.input}`,
+      modelOut: `Action: ${it.toolName}\nInput: ${it.input}`, status: 'Response received', iter: `Iteration ${n}`,
+      trace: `        Action:       use the ${it.toolName} tool\n        Input:        ${it.input}\n`
+    });
+    s.push({
+      actor: 'harness', from: 'harness', to: 'tool:' + it.tool, packet: 'Call',
+      title: `Iteration ${n}: the harness reads the action and calls the tool`,
+      text: `<p>The harness looks for the <code>Action:</code> line in the text, finds "${it.toolName}" and passes it the content of <code>Input:</code>. This call is made by the program, not by the model.</p>`,
+      payloadLbl: 'Harness call', payload: `${it.toolName}("${it.input}")`,
+      toolIO: { id: it.tool, input: it.input }, status: `Running ${it.toolName}`, iter: `Iteration ${n}`,
+      trace: `    The ${it.toolName} runs.\n`
+    });
+    s.push({
+      actor: 'tool', from: 'tool:' + it.tool, to: 'harness', packet: 'Observation',
+      title: `Iteration ${n}: the observation comes back and is stored in memory`,
+      text: `<p>The tool returns its result. The harness adds it to the list of observations and checks whether the model declared the goal achieved. It did not, so the loop repeats.</p>`,
+      payloadLbl: 'Observation', payload: it.obs,
+      toolIO: { id: it.tool, input: it.input, output: it.obs },
+      memAdd: it.memText, status: 'Goal achieved? No. The loop repeats.', iter: `Iteration ${n}`,
+      trace: `        Observation:  ${it.obs.replace('\n', '\n                      ')}\n    Observations: [${P_ITERS.slice(0, n).map(x => /^\d+\.\d+$/.test(x.memText) ? x.memText : '"' + x.memText + '"').join(', ')}]\n    Goal achieved? No. The loop repeats.\n`,
+      hl: ['sub-memory']
+    });
+  });
+  s.push({
+    actor: 'harness', from: 'harness', to: 'model', packet: 'Prompt',
+    title: 'Iteration 4: the harness sends the prompt with three observations',
+    text: '<p>Same instructions, same goal and now three observations: price, exchange rate and the result of the multiplication.</p>',
+    payloadLbl: 'Prompt to the LLM', payload: pPromptText(3),
+    ctx: pCtx(3), thinking: true, status: 'Waiting for the model\'s response', iter: 'Iteration 4',
+    trace: '\nITERATION 4\n    The LLM analyzes the goal and the observations.\n', hl: ['sub-system', 'sub-memory']
+  });
+  s.push({
+    actor: 'model', from: 'model', to: 'harness', packet: 'Text',
+    title: 'Iteration 4: the model declares the goal achieved',
+    text: '<p>With all the data in its observations, the model chooses the second option of the format: <code>goal achieved</code> and writes the answer.</p><p>It also contributes judgment: it rounds 8279.816 to two decimals to present it as an amount in pesos.</p>',
+    payloadLbl: 'LLM response', payload: `Action:       goal achieved\nAnswer:       ${P_RESP.replace(/\n/g, '\n              ')}`,
+    modelOut: `Action: goal achieved\nAnswer: ${P_RESP.replace(/\n/g, ' ')}`, status: 'Response received', iter: 'Iteration 4',
+    trace: `        Action:       goal achieved\n        Answer:       ${P_RESP.replace(/\n/g, '\n                      ')}\n`
+  });
+  s.push({
+    actor: 'harness', from: 'harness', to: 'user', packet: 'Final answer',
+    title: 'The harness ends the loop and delivers the answer',
+    text: '<p>The harness reads <code>Action: goal achieved</code>, stops the loop and delivers the text of <code>Answer:</code> to the user.</p><p>Summary: 4 calls to the model, 3 tool calls, 3 observations in memory.</p>',
+    payloadLbl: 'Final answer', payload: 'The Nintendo Switch 2 costs 449.99 dollars, which is about\n8,279.82 Mexican pesos at today\'s exchange rate.',
+    userAnswer: 'The Nintendo Switch 2 costs 449.99 dollars, which is about 8,279.82 Mexican pesos at today\'s exchange rate.',
+    status: 'Goal achieved? Yes. The loop ends.', iter: 'End',
+    trace: '    Goal achieved? Yes. The loop ends.\n\nFINAL ANSWER\n    The Nintendo Switch 2 costs 449.99 dollars, which is about\n    8,279.82 Mexican pesos at today\'s exchange rate.\n'
+  });
+  return s;
+}
+
+/* ---------- Case 2: Function Calling ---------- */
+const FC_FUNCS = `get_order(order_id: text)
+    Returns the status, the carrier and the estimated delivery date.
+cancel_subscription(customer_id: text)
+    Cancels the customer's active subscription.`;
+const FC_MSG = 'Hi, can you tell me where my order 48213 is?';
+const FC_CALL = `{
+  "name": "get_order",
+  "arguments": { "order_id": "48213" }
+}`;
+const FC_RES = `{
+  "status": "in transit",
+  "carrier": "Envíos del Norte",
+  "estimated_delivery": "2026-09-25"
+}`;
+const FC_RESP = 'Your order 48213 is on its way with Envíos del Norte and the\nestimated delivery is Friday, September 25.';
+
+function buildFC() {
+  const base = [
+    { k: 'tools', lbl: 'Available functions (sent along with the message)', text: FC_FUNCS },
+    { k: 'user', lbl: 'User message', text: FC_MSG }
+  ];
+  return [
+    {
+      actor: 'intro', title: 'The parts of an agent with Function Calling',
+      text: `<p>Case: a customer service assistant receives a structured query.</p>
+<ul>
+<li><b>Model (LLM):</b> recognizes the intent and returns a function call in JSON.</li>
+<li><b>Harness:</b> sends the function definitions, executes the function in the CRM and returns the result to the model.</li>
+<li><b>Available functions:</b> each with a name, parameters and a short description.</li>
+<li><b>Memory:</b> the messages of the conversation, including the call and its result.</li>
+<li><b>Tools:</b> two CRM functions.</li>
+</ul>
+<p>Everything happens in a single step and without visible intermediate reasoning.</p>`,
+      status: 'Waiting for the user\'s message', iter: 'Start',
+      trace: 'AVAILABLE FUNCTIONS (sent to the LLM along with the message)\n' + FC_FUNCS.replace(/^/gm, '    ') + '\n',
+      hl: ['sub-system']
+    },
+    {
+      actor: 'user', from: 'user', to: 'harness', packet: 'Message',
+      title: 'The user asks about their order',
+      text: '<p>It is a structured query: the intent (look up an order) and the required data (the order number) come in the message.</p>',
+      payloadLbl: 'User message', payload: FC_MSG,
+      userMsg: FC_MSG, memAdd: 'user: ' + FC_MSG, status: 'Message received', iter: 'Start',
+      trace: `\nUSER MESSAGE\n    "${FC_MSG}"\n`
+    },
+    {
+      actor: 'harness', from: 'harness', to: 'model', packet: 'Message + functions',
+      title: 'The harness sends the message and the function definitions',
+      text: '<p>Along with the message, the LLM receives the definitions of the available functions. With those definitions the model knows what it can ask for and with which parameters.</p>',
+      payloadLbl: 'What the LLM receives', payload: 'AVAILABLE FUNCTIONS\n' + FC_FUNCS + '\n\nUSER MESSAGE\n' + FC_MSG,
+      ctx: base, thinking: true, status: 'Waiting for the model\'s response', iter: 'Step 1',
+      hl: ['sub-system', 'sub-memory']
+    },
+    {
+      actor: 'model', from: 'model', to: 'harness', packet: 'JSON',
+      title: 'Step 1: the LLM identifies the intent and chooses the function',
+      text: '<p>The LLM recognizes that the intent corresponds to <code>get_order</code>, extracts the order number from the message and returns the call in JSON format.</p><p>There is no visible "Thought": the reasoning stays implicit. The JSON follows the function\'s schema, so it is easy to validate.</p>',
+      payloadLbl: 'Function call', payload: FC_CALL,
+      modelOut: 'get_order({ "order_id": "48213" })', status: 'Function call received', iter: 'Step 1',
+      trace: '\nSTEP 1: THE LLM IDENTIFIES THE INTENT AND CHOOSES THE FUNCTION\n    Function call:\n' + FC_CALL.replace(/^/gm, '        ') + '\n'
+    },
+    {
+      actor: 'harness', from: 'harness', to: 'tool:pedido', packet: 'Call',
+      title: 'Step 2: the program executes the function in the CRM',
+      text: '<p>The harness validates the JSON against the function definition and executes <code>get_order</code> with <code>order_id = "48213"</code>. The model has no access to the CRM; the program does.</p>',
+      payloadLbl: 'Harness call', payload: 'get_order(order_id = "48213")',
+      toolIO: { id: 'pedido', input: 'order_id = "48213"' }, memAdd: 'assistant: call to get_order("48213")',
+      status: 'Running get_order', iter: 'Step 2',
+      trace: '\nSTEP 2: THE PROGRAM EXECUTES THE FUNCTION IN THE CRM\n'
+    },
+    {
+      actor: 'tool', from: 'tool:pedido', to: 'harness', packet: 'Result',
+      title: 'Step 2: the CRM returns the result',
+      text: '<p>The function returns JSON with the status, the carrier and the estimated date. The harness adds it to the conversation as the function result.</p>',
+      payloadLbl: 'Result', payload: FC_RES,
+      toolIO: { id: 'pedido', input: 'order_id = "48213"', output: 'in transit, Envíos del Norte, 2026-09-25' },
+      memAdd: 'result: in transit, Envíos del Norte, 2026-09-25', status: 'Result received', iter: 'Step 2',
+      trace: '    Result:\n' + FC_RES.replace(/^/gm, '        ') + '\n', hl: ['sub-memory']
+    },
+    {
+      actor: 'harness', from: 'harness', to: 'model', packet: 'Result',
+      title: 'The harness hands the result to the LLM',
+      text: '<p>The program hands the result to the LLM along with the earlier conversation: the message, the call the model itself requested and what the CRM returned.</p>',
+      payloadLbl: 'What is new in the prompt', payload: 'Function call:\n' + FC_CALL + '\n\nResult:\n' + FC_RES,
+      ctx: base.concat([
+        { k: 'assistant', lbl: 'Function call (previous LLM response)', text: FC_CALL, isNew: true },
+        { k: 'memory', lbl: 'Function result', text: FC_RES, isNew: true }
+      ]),
+      thinking: true, status: 'Waiting for the model\'s response', iter: 'Step 3', hl: ['sub-memory']
+    },
+    {
+      actor: 'model', from: 'model', to: 'harness', packet: 'Text',
+      title: 'Step 3: the LLM writes the answer',
+      text: '<p>The LLM turns the JSON into a clear answer for the user: it translates "in transit" into "on its way" and the date 2026-09-25 into "Friday, September 25".</p>',
+      payloadLbl: 'Final answer', payload: FC_RESP,
+      modelOut: FC_RESP.replace(/\n/g, ' '), status: 'Response received', iter: 'Step 3',
+      trace: '\nSTEP 3: THE LLM WRITES THE ANSWER\n    Final answer:\n' + FC_RESP.replace(/^/gm, '        ') + '\n'
+    },
+    {
+      actor: 'harness', from: 'harness', to: 'user', packet: 'Final answer',
+      title: 'The harness delivers the answer to the user',
+      text: '<p>The model\'s response no longer contains a function call, so the harness delivers it to the user and ends.</p><p>Summary: 2 calls to the model, 1 function call. The intent translated directly into a call.</p>',
+      userAnswer: FC_RESP.replace(/\n/g, ' '), status: 'Done', iter: 'End'
+    }
+  ];
+}
+
+/* ---------- Case 3: ReAct ---------- */
+const R_TOOLS = `get_payments(customer_id, month)
+get_account_history(customer_id)
+search_knowledge_base(query)
+request_refund(payment_id, amount, reason)`;
+const R_FORMAT = 'In each iteration: write a Thought about what you know so far\nand choose an Action. The program adds the Observation returned by the tool.';
+const R_MSG = 'I was charged twice for the subscription this month. This is unacceptable,\nI want a solution.';
+const R_ITERS = [
+  { tool: 'pagos',
+    thought: 'The customer reports a double charge. First I check their\nSeptember payments to confirm it.',
+    action: 'get_payments(customer_id = "C-1027", month = "September 2026")',
+    obs: 'P-88310   Sep 1   $199 MXN   Premium Subscription   card ...4411\nP-88342   Sep 3   $199 MXN   Premium Subscription   card ...8830',
+    note: 'With only the customer\'s message, the model reasons that it must first confirm the problem.' },
+  { tool: 'historial',
+    thought: 'There are two charges for the same period, with different\ncards. I review the account history to understand why.',
+    action: 'get_account_history(customer_id = "C-1027")',
+    obs: 'Sep 2: the customer changed their payment method to card ...8830\nSep 3: the system charged the subscription with the new method',
+    note: 'The previous observation changes the plan: two different cards lead the model to review the history. This action was not decided in advance.' },
+  { tool: 'kb',
+    thought: 'When the card was changed, the system seems to have charged\nan already paid period again. I check whether it is a known\nerror and what the policy says.',
+    action: 'search_knowledge_base("duplicate charge when changing payment method")',
+    obs: '"Known error #312: when the payment method is updated, the\nsystem may charge the current period again. A full refund of\nthe second charge applies; it is reflected within 5 to 10\nbusiness days."',
+    note: 'The model forms a hypothesis about the cause and decides to verify it in the knowledge base.' },
+  { tool: 'reembolso',
+    thought: 'The case matches error #312. The second charge should be\nrefunded.',
+    action: 'request_refund(payment_id = "P-88342", amount = 199,\n               reason = "Duplicate charge, error #312")',
+    obs: '"Refund R-5521 created. It will be reflected within 5 to 10 business days."',
+    note: 'With the cause confirmed, the model chooses the action that solves the problem. It takes payment_id P-88342 from the observation in iteration 1.' }
+];
+const R_FINAL_T = 'I confirmed the problem, identified the cause and created the\nrefund. I can reply to the customer.';
+const R_FINAL = 'You\'re right, you were charged twice for the September subscription.\nIt happened because of an error in our system when you updated your\npayment method on September 2. We have already created the refund for\nthe second charge ($199 MXN, reference R-5521), which you will see\nwithin 5 to 10 business days. We apologize for the inconvenience.';
+const R_TOOLNAMES = { pagos: 'get_payments', historial: 'get_account_history', kb: 'search_knowledge_base', reembolso: 'request_refund' };
+
+function rStepText(it) {
+  return `Thought:      ${it.thought.replace(/\n/g, '\n              ')}\nAction:       ${it.action}\nObservation:  ${it.obs.replace(/\n/g, '\n              ')}`;
+}
+function rCtx(n) {
+  const segs = [
+    { k: 'tools', lbl: 'Available tools', text: R_TOOLS },
+    { k: 'system', lbl: 'ReAct loop format', text: R_FORMAT },
+    { k: 'user', lbl: 'User message (customer C-1027)', text: R_MSG }
+  ];
+  R_ITERS.slice(0, n).forEach((it, i) => segs.push({ k: 'memory', lbl: `Iteration ${i + 1}: thought, action and observation`, text: rStepText(it), isNew: i === n - 1 }));
+  return segs;
+}
+
+function buildReact() {
+  const s = [];
+  s.push({
+    actor: 'intro', title: 'The parts of a ReAct agent',
+    text: `<p>Case: the same customer service assistant receives an open-ended complaint. Calling a function is not enough: it has to confirm the problem, find out the cause and decide the solution.</p>
+<ul>
+<li><b>Model (LLM):</b> in each iteration writes a <b>Thought</b> and chooses an <b>Action</b>.</li>
+<li><b>Harness:</b> executes the action, captures the <b>Observation</b> and adds it to the history.</li>
+<li><b>Memory:</b> the history of thoughts, actions and observations. Each observation guides the next step.</li>
+<li><b>Tools:</b> four functions for payments, account, knowledge base and refunds.</li>
+</ul>`,
+    status: 'Waiting for the user\'s message', iter: 'Start',
+    trace: 'AVAILABLE TOOLS\n' + R_TOOLS.replace(/^/gm, '    ') + '\n', hl: ['sub-system']
+  });
+  s.push({
+    actor: 'user', from: 'user', to: 'harness', packet: 'Complaint',
+    title: 'Customer C-1027 sends a complaint',
+    text: '<p>The complaint does not say what to look up or in what order. The agent does not know in advance how many queries it will need.</p>',
+    payloadLbl: 'User message', payload: R_MSG,
+    userMsg: R_MSG.replace(/\n/g, ' '), status: 'Message received', iter: 'Start',
+    trace: `\nUSER MESSAGE (customer C-1027)\n    "${R_MSG.replace(/\n/g, '\n    ')}"\n`
+  });
+  R_ITERS.forEach((it, i) => {
+    const n = i + 1, tn = R_TOOLNAMES[it.tool];
+    s.push({
+      actor: 'harness', from: 'harness', to: 'model', packet: 'Prompt',
+      title: `Iteration ${n}: the harness sends the history to the model`,
+      text: n === 1
+        ? '<p>The harness sends the tools, the loop format and the customer\'s message. The history is still empty.</p>'
+        : `<p>The harness resends everything from before plus the block from iteration ${i}: its thought, its action and the observation that came back.</p>`,
+      payloadLbl: 'What is new in the prompt', payload: n === 1 ? R_MSG : rStepText(R_ITERS[i - 1]),
+      ctx: rCtx(i), thinking: true, status: 'Waiting for the model\'s response', iter: `Iteration ${n}`,
+      trace: `\nITERATION ${n}\n`, hl: ['sub-system', 'sub-memory']
+    });
+    s.push({
+      actor: 'model', from: 'model', to: 'harness', packet: 'Thought + Action',
+      title: `Iteration ${n}: the model thinks and chooses an action`,
+      text: `<p>${it.note}</p><p>The reasoning is explicit: the Thought is written down before the Action.</p>`,
+      payloadLbl: 'LLM response', payload: `Thought:      ${it.thought.replace(/\n/g, '\n              ')}\nAction:       ${it.action}`,
+      modelOut: `Thought: ${it.thought.replace(/\n/g, ' ')}\nAction: ${it.action.replace(/\s*\n\s*/g, ' ')}`,
+      status: 'Response received', iter: `Iteration ${n}`,
+      trace: `    Thought:      ${it.thought.replace(/\n/g, '\n                  ')}\n    Action:       ${it.action.replace(/\n/g, '\n                  ')}\n`
+    });
+    s.push({
+      actor: 'harness', from: 'harness', to: 'tool:' + it.tool, packet: 'Call',
+      title: `Iteration ${n}: the harness executes ${tn}`,
+      text: `<p>The harness reads the <code>Action:</code> line, identifies the <code>${tn}</code> tool with its arguments and executes it. Many ReAct agents use function calling as the mechanism for this call.</p>`,
+      payloadLbl: 'Harness call', payload: it.action,
+      toolIO: { id: it.tool, input: it.action.replace(/^[a-z_]+\(|\)$/g, '').replace(/\s*\n\s*/g, ' ') },
+      status: `Running ${tn}`, iter: `Iteration ${n}`
+    });
+    s.push({
+      actor: 'tool', from: 'tool:' + it.tool, to: 'harness', packet: 'Observation',
+      title: `Iteration ${n}: the observation goes back into the history`,
+      text: `<p>The tool responds and the harness stores the complete block (thought, action and observation) in the history the model will see in the next iteration.</p>`,
+      payloadLbl: 'Observation', payload: it.obs,
+      toolIO: { id: it.tool, input: it.action.replace(/^[a-z_]+\(|\)$/g, '').replace(/\s*\n\s*/g, ' '), output: it.obs },
+      memAdd: `${n}. ${tn}\n${it.obs.split('\n')[0]}${it.obs.includes('\n') ? ' ...' : ''}`,
+      status: 'No final answer. Next iteration.', iter: `Iteration ${n}`,
+      trace: `    Observation:  ${it.obs.replace(/\n/g, '\n                  ')}\n`, hl: ['sub-memory']
+    });
+  });
+  s.push({
+    actor: 'harness', from: 'harness', to: 'model', packet: 'Prompt',
+    title: 'Iteration 5: the harness sends the full history',
+    text: '<p>The prompt now contains four blocks of thought, action and observation. It is the longest prompt of the whole case.</p>',
+    payloadLbl: 'What is new in the prompt', payload: rStepText(R_ITERS[3]),
+    ctx: rCtx(4), thinking: true, status: 'Waiting for the model\'s response', iter: 'Iteration 5',
+    trace: '\nITERATION 5\n', hl: ['sub-system', 'sub-memory']
+  });
+  s.push({
+    actor: 'model', from: 'model', to: 'harness', packet: 'Final answer',
+    title: 'Iteration 5: the model decides it can now reply',
+    text: '<p>Instead of an Action, the model writes a <b>Final answer</b>: the cause of the problem and the solution, with data taken from the observations (date of the change, amount, reference R-5521, timeframe of 5 to 10 days).</p>',
+    payloadLbl: 'LLM response', payload: `Thought:      ${R_FINAL_T.replace(/\n/g, '\n              ')}\nFinal answer:\n${R_FINAL}`,
+    modelOut: `Thought: ${R_FINAL_T.replace(/\n/g, ' ')}\nFinal answer: ...`, status: 'Final answer detected', iter: 'Iteration 5',
+    trace: `    Thought:      ${R_FINAL_T.replace(/\n/g, '\n                  ')}\n    Final answer:\n${R_FINAL.replace(/^/gm, '        ')}\n`
+  });
+  s.push({
+    actor: 'harness', from: 'harness', to: 'user', packet: 'Final answer',
+    title: 'The harness delivers the answer to the customer',
+    text: '<p>The harness detects "Final answer", ends the loop and delivers it.</p><p>Summary: 5 calls to the model, 4 tool calls. Each observation changed the next step.</p>',
+    userAnswer: R_FINAL.replace(/\n/g, ' '), status: 'Done', iter: 'End'
+  });
+  return s;
+}
+
+const COMPARE = `<table class="cmp">
+<thead><tr><th>Aspect</th><th>Function Calling</th><th>ReAct</th></tr></thead>
+<tbody>
+<tr><td>Steps</td><td>One: the intent translates directly into a call</td><td>Several: the agent does not know in advance how many queries it will need</td></tr>
+<tr><td>Reasoning</td><td>Implicit, not shown</td><td>Explicit: a <i>Thought</i> before each action</td></tr>
+<tr><td>Action format</td><td>JSON with arguments defined by a schema, easy to validate</td><td>Action chosen after reasoning about the previous observations</td></tr>
+<tr><td>Role of the observations</td><td>The result is used to write the answer</td><td>Each observation changes the next step (two different cards lead to reviewing the history)</td></tr>
+<tr><td>Ideal case</td><td>Structured queries: order status, cancellation</td><td>Open-ended complaints: analyze, find the cause, consult several sources</td></tr>
+</tbody></table>
+<p style="margin-top:10px">In practice they are not mutually exclusive: many ReAct agents use function calling as the mechanism to invoke their tools; what sets ReAct apart is the explicit reasoning loop around those calls.</p>`;
+
+const CASES = {
+  prices: {
+    tab: 'Price agent', sub: 'Basic loop: action and observation',
+    intro: '<b>Price agent.</b> Reports the price of a product in the currency the user requests. It has a search engine and a calculator. In each iteration, the agent program sends the LLM a prompt with the goal and the accumulated observations, and the LLM replies with the next action.',
+    sysTitle: 'System instructions', sysText: P_SYS, memTitle: 'Memory: observations',
+    tools: [
+      { id: 'search', name: 'Search engine', desc: 'Searches for information on the internet.' },
+      { id: 'calc', name: 'Calculator', desc: 'Evaluates arithmetic operations.' }
+    ],
+    build: buildPrecios,
+    notes: `<h2>What to notice in this case</h2><ul>
+<li><b>The same tool, two purposes.</b> The agent uses the search engine twice: first for the price and then for the exchange rate.</li>
+<li><b>The system instructions do not change.</b> They tell the LLM which tools it has and in what format to reply, so the program can read its response and run the indicated tool.</li>
+<li><b>The prompt grows with each iteration.</b> The list of observations is the only thing the LLM "remembers" from the previous steps.</li>
+<li><b>The LLM never executes anything.</b> It only replies with text; the agent program reads "Action: calculator", calls the tool and adds the result to the next prompt.</li>
+<li><b>The LLM also contributes judgment.</b> It rounds the calculator's result to two decimals to present it as an amount in pesos.</li>
+</ul>`
+  },
+  fc: {
+    tab: 'Function Calling', sub: 'Order status',
+    intro: '<b>Function Calling (FC).</b> A user asks where their order is. Since it is a structured query, the assistant recognizes the intent, calls the CRM function and returns the result.',
+    sysTitle: 'Available functions', sysText: FC_FUNCS, memTitle: 'Memory: messages',
+    tools: [
+      { id: 'pedido', name: 'get_order', desc: 'CRM: status, carrier and estimated delivery date.' },
+      { id: 'cancelar', name: 'cancel_subscription', desc: 'CRM: cancels the customer\'s active subscription.' }
+    ],
+    build: buildFC,
+    notes: '<h2>Function Calling vs. ReAct</h2><p>FC solves in a single step what is already structured; ReAct chains several steps when the agent has to figure out what to do.</p>' + COMPARE
+  },
+  react: {
+    tab: 'ReAct', sub: 'Duplicate charge complaint',
+    intro: '<b>ReAct.</b> A user complains that they were charged twice for their subscription. The assistant has to confirm the problem, find out the cause and decide which solution applies. In each iteration the LLM writes a thought, chooses an action and receives an observation that guides the next step.',
+    sysTitle: 'Tools and format', sysText: R_TOOLS + '\n\n' + R_FORMAT, memTitle: 'Memory: ReAct history',
+    tools: [
+      { id: 'pagos', name: 'get_payments', desc: 'The customer\'s payments in a month.' },
+      { id: 'historial', name: 'get_account_history', desc: 'Changes to the customer\'s account.' },
+      { id: 'kb', name: 'search_knowledge_base', desc: 'Known errors and policies.' },
+      { id: 'reembolso', name: 'request_refund', desc: 'Creates a refund for a payment.' }
+    ],
+    build: buildReact,
+    notes: '<h2>Function Calling vs. ReAct</h2><p>FC solves in a single step what is already structured; ReAct chains several steps when the agent has to figure out what to do.</p>' + COMPARE
+  }
+};
+
+/* ============================================================
+   Application engine
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+const LANG_TARGET = '../anatomia_agentes.html', LANG_HASH = { prices: 'precios' };
+let caseId = 'prices', steps = [], cur = 0, playing = false, timer = null, maxCtx = 1;
+
+function tabsRender() {
+  $('tabs').innerHTML = Object.entries(CASES).map(([id, c]) =>
+    `<button class="tab${id === caseId ? ' active' : ''}" data-case="${id}" type="button">${c.tab}<small>${c.sub}</small></button>`).join('');
+  $('tabs').querySelectorAll('.tab').forEach(b => b.onclick = () => loadCase(b.dataset.case));
+}
+
+function loadCase(id) {
+  stop();
+  caseId = CASES[id] ? id : 'prices';
+  try { history.replaceState(null, '', '#' + caseId); } catch (e) {}
+  const c = CASES[caseId];
+  steps = c.build();
+  maxCtx = Math.max(1, ...steps.filter(s => s.ctx).map(s => ctxLen(s.ctx)));
+  tabsRender();
+  $('caseIntro').innerHTML = c.intro;
+  $('sysTitle').textContent = c.sysTitle;
+  $('sysText').textContent = c.sysText;
+  $('memTitle').textContent = c.memTitle;
+  $('toolsRow').innerHTML = c.tools.map(t =>
+    `<div class="node tool" id="node-tool-${t.id}"><h3><span class="dot"></span><span class="mono">${t.name}</span></h3><div class="role" style="margin-bottom:0">${t.desc}</div><div class="io" id="io-${t.id}"></div></div>`).join('');
+  $('notes').innerHTML = c.notes;
+  const lk = $('langLink'); if (lk) lk.href = LANG_TARGET + '#' + (LANG_HASH[caseId] || caseId);
+  timelineRender();
+  go(0, false);
+}
+
+function ctxLen(ctx) { return ctx.reduce((a, s) => a + s.text.length, 0); }
+
+function timelineRender() {
+  const groups = [];
+  steps.forEach((s, i) => {
+    const g = s.iter || '';
+    if (!groups.length || groups[groups.length - 1].lbl !== g) groups.push({ lbl: g, idx: [] });
+    groups[groups.length - 1].idx.push(i);
+  });
+  $('timeline').innerHTML = groups.map(g => `<div class="tl-group"><span class="tl-lbl">${g.lbl}</span><div class="tl-dots">${
+    g.idx.map(i => `<button class="tl-dot" data-i="${i}" title="${esc(steps[i].title)}" style="--c:${ACTORS[steps[i].actor].color}" type="button"></button>`).join('')
+  }</div></div>`).join('');
+  $('timeline').querySelectorAll('.tl-dot').forEach(b => b.onclick = () => { stop(); go(+b.dataset.i, true); });
+}
+
+/* Accumulated state up to step i */
+function stateAt(i) {
+  const st = { mem: [], ctx: null, prevCtx: null, modelOut: null, thinking: false, userMsg: null, userAnswer: null, io: {}, status: '', iter: '', trace: [] };
+  for (let k = 0; k <= i; k++) {
+    const s = steps[k];
+    if (s.memAdd) st.mem.push({ text: s.memAdd, fresh: k === i });
+    if (s.ctx) { st.prevCtx = st.ctx; st.ctx = s.ctx; }
+    if (s.thinking) { st.thinking = true; st.modelOut = null; }
+    if (s.modelOut) { st.modelOut = s.modelOut; st.thinking = false; }
+    if (s.userMsg) st.userMsg = s.userMsg;
+    if (s.userAnswer) st.userAnswer = s.userAnswer;
+    if (s.toolIO) st.io[s.toolIO.id] = s.toolIO;
+    if (s.status) st.status = s.status;
+    if (s.iter) st.iter = s.iter;
+    if (s.trace) st.trace.push({ text: s.trace, now: k === i });
+  }
+  return st;
+}
+
+function go(i, animate) {
+  cur = Math.max(0, Math.min(steps.length - 1, i));
+  const s = steps[cur], st = stateAt(cur);
+  const dur = 950 / speed();
+  const delay = animate && s.from ? dur : 0;
+
+  /* Diagram panels */
+  $('userBox').innerHTML =
+    (st.userMsg ? `<div class="bubble">${esc(st.userMsg)}</div>` : '<div class="empty">No messages yet</div>') +
+    (st.userAnswer ? `<div class="bubble final"><b>Answer:</b> ${esc(st.userAnswer)}</div>` : '');
+  $('iterBadge').textContent = st.iter || 'Start';
+  $('hStatus').textContent = st.status;
+  $('memList').innerHTML = st.mem.length
+    ? st.mem.map(m => `<div class="mem-item${m.fresh ? ' fresh' : ''}" style="--delay:${m.fresh ? delay : 0}ms">${esc(m.text)}</div>`).join('')
+    : '<div class="empty">Empty</div>';
+  $('llmCore').innerHTML = st.thinking && (s.to === 'model')
+    ? 'LLM <span class="thinking"><span></span><span></span><span></span></span>'
+    : 'LLM';
+  $('modelOut').innerHTML = st.modelOut ? `<div class="bubble out">${esc(st.modelOut)}</div>` : '';
+  CASES[caseId].tools.forEach(t => {
+    const io = st.io[t.id];
+    $('io-' + t.id).innerHTML = io
+      ? `<div><span class="lbl">Input:</span> ${esc(io.input)}</div>` + (io.output ? `<div><span class="lbl">Output:</span> ${esc(io.output)}</div>` : '')
+      : '';
+  });
+
+  /* Highlights */
+  document.querySelectorAll('.node, .sub').forEach(n => n.classList.remove('on', 'pulse'));
+  const target = s.to ? nodeEl(s.to) : null;
+  const source = s.from ? nodeEl(s.from) : null;
+  if (source) source.classList.add('on');
+  (s.hl || []).forEach(h => $(h).classList.add('on'));
+  if (target) {
+    setTimeout(() => {
+      if (steps[cur] !== s) return;
+      target.classList.add('on');
+      if (animate) { target.classList.remove('pulse'); void target.offsetWidth; target.classList.add('pulse'); }
+    }, delay);
+  }
+  drawLinks(s);
+  if (animate && s.from) flyPacket(s, dur);
+
+  /* Step panel */
+  const a = ACTORS[s.actor];
+  $('stepPanel').style.setProperty('--c', a.color);
+  $('actorBadge').textContent = a.name;
+  $('actorBadge').style.setProperty('--c', a.color);
+  $('stepTitle').textContent = s.title;
+  $('stepText').innerHTML = s.text || '';
+  $('payloadWrap').innerHTML = s.payload
+    ? `<div class="payload-lbl">${esc(s.payloadLbl || '')}</div><pre class="payload" style="--c:${a.color}">${esc(s.payload)}</pre>` : '';
+
+  /* Prompt */
+  renderPrompt(s, st);
+
+  /* Trace */
+  const tb = $('traceBox');
+  tb.innerHTML = st.trace.length
+    ? st.trace.map(t => `<span class="${t.now ? 'now' : 'past'}">${esc(t.text)}</span>`).join('')
+    : '<span class="past">The trace appears as the steps progress.</span>';
+  const nowEl = tb.querySelector('.now');
+  if (nowEl) tb.scrollTop = nowEl.offsetTop - tb.offsetTop - 40;
+
+  /* Timeline and controls */
+  $('timeline').querySelectorAll('.tl-dot').forEach(d => {
+    const k = +d.dataset.i;
+    d.classList.toggle('cur', k === cur);
+    d.classList.toggle('done', k < cur);
+  });
+  $('counter').textContent = `Step ${cur + 1} of ${steps.length}`;
+  $('btnPrev').disabled = cur === 0;
+  $('btnNext').disabled = cur === steps.length - 1;
+}
+
+function renderPrompt(s, st) {
+  const v = $('view-prompt');
+  if (!st.ctx) {
+    v.innerHTML = '<p class="empty">The harness has not called the model yet. The full prompt the LLM receives in each call will appear here.</p>';
+    return;
+  }
+  const sending = !!s.ctx;
+  const len = ctxLen(st.ctx), prev = st.prevCtx ? ctxLen(st.prevCtx) : 0;
+  v.innerHTML =
+    `<p style="margin:0 0 8px;font-size:.85rem;color:var(--muted)">${sending
+      ? 'This is the prompt the harness sends to the model in this step. The highlighted parts are new compared to the previous call.'
+      : 'Last prompt the model received. Outside of the calls to the model, the LLM sees nothing else.'}</p>` +
+    st.ctx.map(g => `<div class="seg k-${g.k}${g.isNew && sending ? ' new' : ''}">${g.isNew && sending ? '<span class="new-tag">NEW</span>' : ''}<div class="seg-lbl">${esc(g.lbl)}</div><pre>${esc(g.text)}</pre></div>`).join('') +
+    `<div class="psize">Prompt size: ${len.toLocaleString('en-US')} characters${prev ? ` (previous call: ${prev.toLocaleString('en-US')})` : ''}</div>
+     <div class="pbar"><div style="width:${Math.round(100 * len / maxCtx)}%"></div></div>`;
+}
+
+function nodeEl(ref) {
+  if (ref.startsWith('tool:')) return $('node-tool-' + ref.slice(5));
+  return $('node-' + ref);
+}
+
+function centerOf(el) {
+  const r = el.getBoundingClientRect(), sr = $('stage').getBoundingClientRect();
+  return { x: r.left - sr.left + r.width / 2, y: r.top - sr.top + r.height / 2 };
+}
+
+function drawLinks(s) {
+  const svg = $('links'), sr = $('stage').getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${sr.width} ${sr.height}`);
+  const h = centerOf($('node-harness'));
+  const pairs = [['user', $('node-user')], ['model', $('node-model')]]
+    .concat(CASES[caseId].tools.map(t => ['tool:' + t.id, $('node-tool-' + t.id)]));
+  const activeRef = s && (s.from === 'harness' ? s.to : s.to === 'harness' ? s.from : null);
+  const color = s ? ACTORS[s.actor].color : '';
+  svg.innerHTML = pairs.map(([ref, el]) => {
+    const c = centerOf(el);
+    const act = ref === activeRef;
+    return `<line x1="${h.x}" y1="${h.y}" x2="${c.x}" y2="${c.y}" class="${act ? 'active' : ''}" style="--c:${color}"/>`;
+  }).join('');
+}
+
+function flyPacket(s, dur) {
+  document.querySelectorAll('.packet').forEach(p => p.remove());
+  const a = centerOf(nodeEl(s.from)), b = centerOf(nodeEl(s.to));
+  const p = document.createElement('div');
+  p.className = 'packet';
+  p.textContent = s.packet || '';
+  p.style.setProperty('--c', ACTORS[s.actor].color);
+  $('stage').appendChild(p);
+  const w = p.offsetWidth / 2, hh = p.offsetHeight / 2;
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - 30;
+  const anim = p.animate([
+    { transform: `translate(${a.x - w}px, ${a.y - hh}px) scale(.7)`, opacity: 0 },
+    { transform: `translate(${(a.x + mx) / 2 - w}px, ${(a.y + my) / 2 - hh}px) scale(1)`, opacity: 1, offset: .2 },
+    { transform: `translate(${mx - w}px, ${my - hh}px) scale(1.05)`, opacity: 1, offset: .5 },
+    { transform: `translate(${b.x - w}px, ${b.y - hh}px) scale(1)`, opacity: 1, offset: .9 },
+    { transform: `translate(${b.x - w}px, ${b.y - hh}px) scale(.6)`, opacity: 0 }
+  ], { duration: dur, easing: 'ease-in-out', fill: 'forwards' });
+  anim.onfinish = () => p.remove();
+}
+
+/* Playback */
+function speed() { return parseFloat($('speed').value) || 1; }
+function readTime(s) {
+  const len = (s.text || '').replace(/<[^>]+>/g, '').length + (s.payload || '').length * .4;
+  return Math.min(11000, Math.max(3200, len * 38));
+}
+function schedule() {
+  clearTimeout(timer);
+  if (!playing) return;
+  if (cur >= steps.length - 1) { stop(); return; }
+  timer = setTimeout(() => { go(cur + 1, true); schedule(); }, (950 + readTime(steps[cur])) / speed());
+}
+function play() {
+  if (cur >= steps.length - 1) go(0, false);
+  playing = true; $('btnPlay').textContent = 'Pause';
+  clearTimeout(timer);
+  timer = setTimeout(() => { go(cur + 1, true); schedule(); }, 400);
+}
+function stop() { playing = false; clearTimeout(timer); const b = $('btnPlay'); if (b) b.textContent = 'Play'; }
+
+$('btnPlay').onclick = () => playing ? stop() : play();
+$('btnNext').onclick = () => { stop(); go(cur + 1, true); };
+$('btnPrev').onclick = () => { stop(); go(cur - 1, false); };
+$('btnReset').onclick = () => { stop(); go(0, false); };
+$('speed').onchange = () => { if (playing) schedule(); };
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); $('btnNext').click(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); $('btnPrev').click(); }
+  else if (e.key === ' ') { e.preventDefault(); $('btnPlay').click(); }
+});
+document.querySelectorAll('.ptab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.ptab').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('.pview').forEach(v => v.classList.toggle('active', v.id === 'view-' + b.dataset.view));
+  if (b.dataset.view === 'trace') { const n = $('traceBox').querySelector('.now'); if (n) $('traceBox').scrollTop = n.offsetTop - $('traceBox').offsetTop - 40; }
+});
+$('themeBtn').onclick = () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+};
+window.addEventListener('resize', () => drawLinks(steps[cur]));
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h && h !== caseId) loadCase(h); });
+
+loadCase(location.hash.slice(1) || 'prices');
+</script>
+</body>
+</html>

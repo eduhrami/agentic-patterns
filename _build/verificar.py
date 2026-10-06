@@ -6,7 +6,8 @@ Uso:  python3 _build/verificar.py   (requiere: pip install playwright && playwri
 Comprueba en cada patrón: sin errores de JavaScript, todas las marcas del trace
 encontradas, cada agente con system prompt y cada prompt asociado a un nodo,
 popovers visibles al pasar el cursor sin tapar su chip. Revisa además que no
-haya em-dashes ni en-dashes y que no exista desborde horizontal en 390 px.
+haya em-dashes ni en-dashes, que no exista desborde horizontal en 390 px y que
+los enlaces relativos entre páginas (incluido el cambio de idioma) existan.
 """
 import re
 import sys
@@ -15,8 +16,9 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 BASE = Path(__file__).resolve().parent.parent
-PAGES = sorted((BASE / "patrones").glob("*.html"))
-OTHER = [BASE / "index.html", BASE / "anatomia_agentes.html"]
+PAGES = sorted((BASE / "patrones").glob("*.html")) + sorted((BASE / "en" / "patterns").glob("*.html"))
+OTHER = [p for p in [BASE / "index.html", BASE / "anatomia_agentes.html",
+                     BASE / "en" / "index.html", BASE / "en" / "agent_anatomy.html"] if p.exists()]
 
 
 def overlap(a, b):
@@ -49,7 +51,7 @@ def main():
                 steps: PATRON.steps.length
               };
             }""")
-            name = f.name
+            name = str(f.relative_to(BASE))
             for e in info["trace"]:
                 problems.append(f"{name}: {e}")
             if info["missing"]:
@@ -71,6 +73,11 @@ def main():
                 page.wait_for_timeout(250)
             problems += [f"{name}: {e}" for e in errs]
             print(f"  {name}: {info['steps']} pasos")
+
+        for f in [*OTHER, *PAGES]:
+            for href in re.findall(r'href="([^"#:]+\.html)', f.read_text(encoding="utf-8")):
+                if not (f.parent / href).resolve().exists():
+                    problems.append(f"{f.relative_to(BASE)}: enlace roto a {href}")
 
         mobile = browser.new_page(viewport={"width": 390, "height": 800})
         for f in [*OTHER, *PAGES]:
