@@ -12,7 +12,7 @@ Sitio estático de demos interactivos para enseñar, paso a paso, cómo funciona
 Material del curso de Prompt Engineering y Agentes (TEC de Monterrey / TLG y Curso UTEC).
 
 - **Autor:** Eduardo H. Ramirez, PhD (eduardo.h.ramirez@tec.mx)
-- **Publicado en:** https://eduhrami.github.io/demos-agentes/ (repo `eduhrami/demos-agentes`)
+- **Publicado en:** https://eduhrami.github.io/agentic-patterns/ (repo `eduhrami/agentic-patterns`)
 
 ## Estructura
 
@@ -171,11 +171,14 @@ window.PROMPTS = {
 ## Publicación
 Este repositorio se publica con GitHub Pages desde `main`, en la raíz.
 
-- **Como repo independiente** (`eduhrami/demos-agentes`): commit y push a `main`; Pages se
-  actualiza en uno o dos minutos. Comprobar con `curl -I https://eduhrami.github.io/demos-agentes/`.
+- **Como repo independiente** (`eduhrami/agentic-patterns`): commit y push a `main`; Pages se
+  actualiza en uno o dos minutos. Comprobar con `curl -I https://eduhrami.github.io/agentic-patterns/`.
 - **Si se edita desde el repo de cursos** (`tlg_cursos_genia_2026/demos_agentes/`): hacer commit
   ahí y publicar con
-  `git subtree split --prefix demos_agentes -b demos-agentes-pages && git push https://github.com/eduhrami/demos-agentes.git demos-agentes-pages:main`.
+  `git subtree split --prefix demos_agentes -b agentic-patterns-pages && git push https://github.com/eduhrami/agentic-patterns.git agentic-patterns-pages:main`.
   Elegir uno de los dos flujos para no divergir; si se edita en ambos, sincronizar antes de publicar.
+- **URL anterior:** el repo se llamaba `demos-agentes`. El repo `eduhrami/demos-agentes` es ahora un
+  stub de redirección (`index.html` y `404.html`) que envía cualquier ruta de
+  `eduhrami.github.io/demos-agentes/` a la misma ruta en `agentic-patterns`. No publicar ahí.
 - Commit, push y publicación solo cuando Eduardo lo pida. Los commits terminan con los trailers
   `Co-Authored-By` y `Claude-Session` que indique el entorno.
