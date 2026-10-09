@@ -71,7 +71,7 @@ LANGS = {
             # Índice
             "langLabel": "Idioma",
             "title": "Demos de agentes y orquestación",
-            "lede": "Animaciones paso a paso, construidas a partir de los traces del curso. Primero, la anatomía de un agente individual; después, cómo fluye el contexto entre agentes en cada patrón de orquestación.",
+            "lede": "En los siguientes demos podrás analizar a través de ejemplos y animaciones paso a paso los componentes de un agente (prompts, harness, modelo, etc.) así como las principales estrategias de orquestación y uso de funciones.",
             "s1": "1. Anatomía de un agente",
             "s1lead": "Un solo agente por dentro: qué responde el modelo, qué ejecuta el harness, cómo regresan las observaciones y cómo crece el prompt en cada iteración.",
             "case": "Anatomía · caso",
@@ -118,7 +118,7 @@ LANGS = {
             "spFoot": "Hypothetical instructions, written to illustrate the agent's role. They are not part of the original trace.",
             "langLabel": "Language",
             "title": "Agent and orchestration demos",
-            "lede": "Step-by-step animations built from the course traces. First, the anatomy of a single agent; then, how context flows between agents in each orchestration pattern.",
+            "lede": "In the following demos you can explore, through examples and step-by-step animations, the components of an agent (prompts, harness, model, etc.) as well as the main strategies for orchestration and tool use.",
             "s1": "1. Anatomy of an agent",
             "s1lead": "A single agent from the inside: what the model answers, what the harness executes, how observations come back and how the prompt grows in each iteration.",
             "case": "Anatomy · case",
