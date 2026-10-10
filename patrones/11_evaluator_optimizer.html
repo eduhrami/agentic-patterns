@@ -207,6 +207,30 @@ pre.trace .gone { display: none; }
 .autor a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--border); }
 .autor a:hover { color: var(--text); border-bottom-color: var(--text); }
 
+/* Cómo lo implementan los frameworks */
+details.fw { margin-top: 14px; }
+details.fw summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+details.fw summary::-webkit-details-marker { display: none; }
+details.fw summary::before { content: "+"; font-weight: 800; color: var(--muted); width: 14px; }
+details.fw[open] summary::before { content: "\2212"; }
+details.fw summary h2 { font-size: 1.05rem; margin: 0; }
+.fw-demo, .fw-equiv { font-size: .9rem; margin: 10px 0; }
+.fw-scroll { overflow-x: auto; }
+table.fw-table { width: 100%; border-collapse: collapse; font-size: .84rem; min-width: 640px; }
+table.fw-table th, table.fw-table td { border: 1px solid var(--border); padding: 7px 9px; text-align: left; vertical-align: top; }
+table.fw-table th { background: var(--panel2); }
+table.fw-table code { font-size: .78rem; }
+details.fw .refs { margin-top: 10px; }
+details.fw .refs p { margin: 4px 0 0; }
+.fw-chip {
+  margin-top: 4px; cursor: pointer; font-size: .62rem; font-weight: 800; letter-spacing: .03em;
+  background: var(--panel); color: var(--info); border: 1.5px solid var(--info); border-radius: 999px; padding: 0 7px;
+}
+.fw-chip:hover, .fw-chip:focus-visible { background: var(--info); color: var(--panel); outline: none; }
+.fw-line { display: none; margin-top: 4px; font-size: .76rem; color: var(--text); background: var(--panel2); border-radius: 6px; padding: 5px 8px; }
+.fw-line code { color: var(--text); font-weight: 600; }
+.sp-tool .fw-chip:hover + .fw-line, .sp-tool .fw-chip:focus + .fw-line, .sp-tool .fw-line:hover { display: block; }
+
 </style>
 </head>
 <body>
@@ -278,10 +302,11 @@ pre.trace .gone { display: none; }
     </section>
   </div>
 
+  <details class="panel fw" id="frameworks" hidden></details>
   <section class="panel reading" id="reading"></section>
 </div>
 <script>
-window.UI = {"social": "Redes sociales", "index": "Índice de demos", "prevPattern": "Patrón anterior", "nextPattern": "Patrón siguiente", "theme": "Tema claro / oscuro", "reset": "Reiniciar", "prev": "Anterior", "play": "Reproducir", "pause": "Pausa", "next": "Siguiente", "replay": "Repetir animación", "speed": "Velocidad", "slow": "Lento", "normal": "Normal", "fast": "Rápido", "keys": "Flechas para avanzar o retroceder, espacio para reproducir", "sharedState": "Estado compartido", "fullTrace": "Mostrar el trace completo (las líneas futuras aparecen tenues)", "types": {"input": "Entrada", "agent": "Agente", "code": "Código", "human": "Persona", "output": "Salida", "state": "Estado", "tool": "Herramienta"}, "flows": {"ctx": "Contexto", "res": "Resultado", "handoff": "Handoff", "human": "Persona", "ctrl": "Control", "fb": "Retroalimentación"}, "parts": {"input": "Entrada original", "instr": "Instrucción", "state": "Del estado compartido", "result": "Resultado de otro agente", "feedback": "Retroalimentación", "human": "De una persona", "desc": "Descripciones de agentes", "hist": "Historial"}, "scenario": "Escenario", "source": "Fuente del ejemplo", "patternOf": "Patrón {n} de {t}", "reading": "Lectura del trace", "refs": "Referencias", "flow": "Flujo", "spLegend": "pasa el cursor o haz clic para ver las instrucciones de cada agente", "spAria": "Ver el system prompt de", "flowsInStep": "Flujos de información en este paso", "ctxHead": "Contexto que recibe", "receives": "Recibe", "notReceive": "No recibe", "produces": "Produce", "updated": "ACTUALIZADO", "isNew": "NUEVO", "writes": "escribe", "empty": "Todavía vacío.", "stepOf": "Paso {n} de {t}", "close": "Cerrar", "spTools": "Herramientas que puede invocar", "spOut": "Formato de salida esperado", "spNote": "Observa:", "spFoot": "Instrucciones hipotéticas, redactadas para ilustrar el rol del agente. No forman parte del trace original.", "langLabel": "Idioma", "title": "Demos de agentes y orquestación", "lede": "En los siguientes demos podrás analizar a través de ejemplos y animaciones paso a paso los componentes de un agente (prompts, harness, modelo, etc.) así como las principales estrategias de orquestación y uso de funciones.", "s1": "1. Anatomía de un agente", "s1lead": "Un solo agente por dentro: qué responde el modelo, qué ejecuta el harness, cómo regresan las observaciones y cómo crece el prompt en cada iteración.", "case": "Anatomía · caso", "cases": [["Agente de precios", "Ciclo básico de acción y observación con un motor de búsqueda y una calculadora."], ["Function Calling", "Estado de un pedido: el modelo devuelve una llamada en JSON y el programa la ejecuta."], ["ReAct", "Queja por cobro duplicado: pensamiento, acción y observación en cinco iteraciones."]], "s2": "2. Patrones de orquestación multi-agente", "s2lead": "Cada demo muestra el flujo a nivel workflow: qué agente recibe qué contexto, qué escribe en el estado compartido, quién decide el siguiente paso y dónde intervienen el código y las personas. Cada agente tiene un chip <b>system prompt<\/b>: al pasar el cursor o hacer clic se muestran sus instrucciones y herramientas hipotéticas. Los nombres de personas, empresas, folios y cifras son ficticios.", "pattern": "Patrón", "sourceShort": "Fuente", "convHead": "Convenciones de notación de los traces", "convCols": ["Etiqueta", "Significado"]};
+window.UI = {"social": "Redes sociales", "index": "Índice de demos", "prevPattern": "Patrón anterior", "nextPattern": "Patrón siguiente", "theme": "Tema claro / oscuro", "reset": "Reiniciar", "prev": "Anterior", "play": "Reproducir", "pause": "Pausa", "next": "Siguiente", "replay": "Repetir animación", "speed": "Velocidad", "slow": "Lento", "normal": "Normal", "fast": "Rápido", "keys": "Flechas para avanzar o retroceder, espacio para reproducir", "sharedState": "Estado compartido", "fullTrace": "Mostrar el trace completo (las líneas futuras aparecen tenues)", "types": {"input": "Entrada", "agent": "Agente", "code": "Código", "human": "Persona", "output": "Salida", "state": "Estado", "tool": "Herramienta"}, "flows": {"ctx": "Contexto", "res": "Resultado", "handoff": "Handoff", "human": "Persona", "ctrl": "Control", "fb": "Retroalimentación"}, "parts": {"input": "Entrada original", "instr": "Instrucción", "state": "Del estado compartido", "result": "Resultado de otro agente", "feedback": "Retroalimentación", "human": "De una persona", "desc": "Descripciones de agentes", "hist": "Historial"}, "scenario": "Escenario", "source": "Fuente del ejemplo", "patternOf": "Patrón {n} de {t}", "reading": "Lectura del trace", "refs": "Referencias", "flow": "Flujo", "spLegend": "pasa el cursor o haz clic para ver las instrucciones de cada agente", "spAria": "Ver el system prompt de", "flowsInStep": "Flujos de información en este paso", "ctxHead": "Contexto que recibe", "receives": "Recibe", "notReceive": "No recibe", "produces": "Produce", "updated": "ACTUALIZADO", "isNew": "NUEVO", "writes": "escribe", "empty": "Todavía vacío.", "stepOf": "Paso {n} de {t}", "close": "Cerrar", "spTools": "Herramientas que puede invocar", "spOut": "Formato de salida esperado", "spNote": "Observa:", "spFoot": "Instrucciones hipotéticas, redactadas para ilustrar el rol del agente. No forman parte del trace original.", "fwTitle": "Cómo lo implementan los frameworks", "fwDemo": "En este demo:", "fwCols": ["Framework", "Cómo enruta", "¿Regresa el control?", "API"], "fwEquiv": "Equivale en el demo a:", "fwSources": "Fuentes", "fwReviewed": "Revisado el", "fwChip": "en los frameworks", "fwSee": "Ver la comparación completa", "langLabel": "Idioma", "title": "Demos de agentes y orquestación", "lede": "En los siguientes demos podrás analizar a través de ejemplos y animaciones paso a paso los componentes de un agente (prompts, harness, modelo, etc.) así como las principales estrategias de orquestación y uso de funciones.", "s1": "1. Anatomía de un agente", "s1lead": "Un solo agente por dentro: qué responde el modelo, qué ejecuta el harness, cómo regresan las observaciones y cómo crece el prompt en cada iteración.", "case": "Anatomía · caso", "cases": [["Agente de precios", "Ciclo básico de acción y observación con un motor de búsqueda y una calculadora."], ["Function Calling", "Estado de un pedido: el modelo devuelve una llamada en JSON y el programa la ejecuta."], ["ReAct", "Queja por cobro duplicado: pensamiento, acción y observación en cinco iteraciones."]], "s2": "2. Patrones de orquestación multi-agente", "s2lead": "Cada demo muestra el flujo a nivel workflow: qué agente recibe qué contexto, qué escribe en el estado compartido, quién decide el siguiente paso y dónde intervienen el código y las personas. Cada agente tiene un chip <b>system prompt<\/b>: al pasar el cursor o hacer clic se muestran sus instrucciones y herramientas hipotéticas. Los nombres de personas, empresas, folios y cifras son ficticios.", "pattern": "Patrón", "sourceShort": "Fuente", "convHead": "Convenciones de notación de los traces", "convCols": ["Etiqueta", "Significado"]};
 window.META = {
  "num": 11,
  "total": 16,
@@ -424,10 +449,13 @@ Instrucciones:
 
 </script>
 <script>
+window.FRAMEWORKS = null;
+</script>
+<script>
 /* Motor común de los demos de patrones de orquestación.
    Lee window.PATRON (diagrama y pasos) y window.META (textos extraídos del .md). */
 (function () {
-  const P = window.PATRON, M = window.META, SP = window.PROMPTS || {}, T = window.UI;
+  const P = window.PATRON, M = window.META, SP = window.PROMPTS || {}, T = window.UI, FW = window.FRAMEWORKS;
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -455,6 +483,18 @@ Instrucciones:
   $('intro').innerHTML = M.intro + (P.extra ? ' ' + P.extra : '');
   $('reading').innerHTML = '<h2>' + T.reading + '</h2><ul>' + M.lectura.map(l => '<li>' + l + '</li>').join('') + '</ul>' +
     '<h2 style="margin-top:14px">' + T.refs + '</h2><div class="refs">' + M.refs.map(r => '<p>' + r + '</p>').join('') + '</div>';
+  /* Sección opcional: cómo implementan el patrón los frameworks */
+  if (FW) {
+    const fw = $('frameworks');
+    fw.hidden = false;
+    fw.innerHTML = `<summary><h2>${T.fwTitle}</h2></summary>` +
+      `<p class="fw-demo"><b>${T.fwDemo}</b> ${FW.demo}</p>` +
+      '<div class="fw-scroll"><table class="fw-table"><thead><tr>' + (FW.cols || T.fwCols).map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>' +
+      FW.rows.map(r => `<tr><td><b>${r.fw}</b></td><td>${r.how}</td><td>${r.back}</td><td>${r.api}</td></tr>`).join('') +
+      '</tbody></table></div>' +
+      (FW.equiv ? `<p class="fw-equiv"><b>${T.fwEquiv}</b> ${FW.equiv}</p>` : '') +
+      `<div class="refs"><b>${T.fwSources}</b> (${T.fwReviewed} ${FW.reviewed})` + FW.sources.map(x => '<p>' + x + '</p>').join('') + '</div>';
+  }
   $('boardTab').textContent = P.boardTitle || T.sharedState;
 
   /* Leyenda con los tipos que aparecen en este patrón */
@@ -715,6 +755,15 @@ Instrucciones:
     });
     return out.join('\n');
   }
+  /* Nota breve de frameworks para una herramienta de orquestación (hover en el chip, clic lleva a la sección) */
+  function fwNote(id, sig) {
+    const notes = FW && FW.toolNotes && FW.toolNotes[id];
+    if (!notes) return '';
+    const key = Object.keys(notes).find(k => sig.startsWith(k + '('));
+    if (!key) return '';
+    return `<button class="fw-chip" type="button">${T.fwChip}</button>` +
+      `<div class="fw-line">${notes[key]} <a href="#frameworks" class="fw-go">${T.fwSee}</a></div>`;
+  }
   function popHtml(id) {
     const d = SP[id], n = nodeById[id] || { name: id, tag: '' };
     const tools = d.tools || [];
@@ -723,7 +772,7 @@ Instrucciones:
       `<button class="sp-close" type="button" aria-label="${T.close}">${T.close}</button></div>` +
       `<pre class="sp-text">${esc(reflow(d.prompt))}</pre>` +
       (tools.length ? '<div class="sp-sec">' + T.spTools + '</div>' + tools.map(t =>
-        `<div class="sp-tool"><code>${esc(t.sig)}</code><div>${esc(t.desc)}</div></div>`).join('') : '') +
+        `<div class="sp-tool"><code>${esc(t.sig)}</code><div>${esc(t.desc)}</div>${fwNote(id, t.sig)}</div>`).join('') : '') +
       (d.salida ? `<div class="sp-sec">${T.spOut}</div><pre class="sp-text small">${esc(d.salida)}</pre>` : '') +
       (d.nota ? `<div class="sp-note"><b>${T.spNote}</b> ${d.nota}</div>` : '') +
       '<div class="sp-foot">' + T.spFoot + '</div>';
@@ -778,6 +827,11 @@ Instrucciones:
     const chip = e.target.closest('.sp-chip[data-sp]');
     if (chip) { e.preventDefault(); e.stopPropagation(); pinned = false; showPop(chip, true); return; }
     if (e.target.closest('.sp-close')) { hidePop(true); return; }
+    if (e.target.closest('.fw-chip, .fw-go')) {
+      e.preventDefault(); hidePop(true);
+      const fw = $('frameworks'); fw.open = true; fw.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     if (pinned && !e.target.closest('#spPop')) hidePop(true);
   });
   document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.sp-chip[data-sp]') && !pinned) showPop(e.target, false); });

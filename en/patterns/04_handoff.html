@@ -207,6 +207,30 @@ pre.trace .gone { display: none; }
 .autor a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--border); }
 .autor a:hover { color: var(--text); border-bottom-color: var(--text); }
 
+/* Cómo lo implementan los frameworks */
+details.fw { margin-top: 14px; }
+details.fw summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+details.fw summary::-webkit-details-marker { display: none; }
+details.fw summary::before { content: "+"; font-weight: 800; color: var(--muted); width: 14px; }
+details.fw[open] summary::before { content: "\2212"; }
+details.fw summary h2 { font-size: 1.05rem; margin: 0; }
+.fw-demo, .fw-equiv { font-size: .9rem; margin: 10px 0; }
+.fw-scroll { overflow-x: auto; }
+table.fw-table { width: 100%; border-collapse: collapse; font-size: .84rem; min-width: 640px; }
+table.fw-table th, table.fw-table td { border: 1px solid var(--border); padding: 7px 9px; text-align: left; vertical-align: top; }
+table.fw-table th { background: var(--panel2); }
+table.fw-table code { font-size: .78rem; }
+details.fw .refs { margin-top: 10px; }
+details.fw .refs p { margin: 4px 0 0; }
+.fw-chip {
+  margin-top: 4px; cursor: pointer; font-size: .62rem; font-weight: 800; letter-spacing: .03em;
+  background: var(--panel); color: var(--info); border: 1.5px solid var(--info); border-radius: 999px; padding: 0 7px;
+}
+.fw-chip:hover, .fw-chip:focus-visible { background: var(--info); color: var(--panel); outline: none; }
+.fw-line { display: none; margin-top: 4px; font-size: .76rem; color: var(--text); background: var(--panel2); border-radius: 6px; padding: 5px 8px; }
+.fw-line code { color: var(--text); font-weight: 600; }
+.sp-tool .fw-chip:hover + .fw-line, .sp-tool .fw-chip:focus + .fw-line, .sp-tool .fw-line:hover { display: block; }
+
 </style>
 </head>
 <body>
@@ -278,10 +302,11 @@ pre.trace .gone { display: none; }
     </section>
   </div>
 
+  <details class="panel fw" id="frameworks" hidden></details>
   <section class="panel reading" id="reading"></section>
 </div>
 <script>
-window.UI = {"social": "Social media", "index": "Demo index", "prevPattern": "Previous pattern", "nextPattern": "Next pattern", "theme": "Light / dark theme", "reset": "Restart", "prev": "Previous", "play": "Play", "pause": "Pause", "next": "Next", "replay": "Replay animation", "speed": "Speed", "slow": "Slow", "normal": "Normal", "fast": "Fast", "keys": "Arrow keys to move forward or back, space to play", "sharedState": "Shared state", "fullTrace": "Show the full trace (upcoming lines appear faded)", "types": {"input": "Input", "agent": "Agent", "code": "Code", "human": "Person", "output": "Output", "state": "State", "tool": "Tool"}, "flows": {"ctx": "Context", "res": "Result", "handoff": "Handoff", "human": "Person", "ctrl": "Control", "fb": "Feedback"}, "parts": {"input": "Original input", "instr": "Instruction", "state": "From shared state", "result": "Result from another agent", "feedback": "Feedback", "human": "From a person", "desc": "Agent descriptions", "hist": "History"}, "scenario": "Scenario", "source": "Example source", "patternOf": "Pattern {n} of {t}", "reading": "Reading the trace", "refs": "References", "flow": "Flow", "spLegend": "hover or click to see each agent's instructions", "spAria": "See the system prompt of", "flowsInStep": "Information flows in this step", "ctxHead": "Context received", "receives": "Receives", "notReceive": "Does not receive", "produces": "Produces", "updated": "UPDATED", "isNew": "NEW", "writes": "written by", "empty": "Still empty.", "stepOf": "Step {n} of {t}", "close": "Close", "spTools": "Tools it can call", "spOut": "Expected output format", "spNote": "Notice:", "spFoot": "Hypothetical instructions, written to illustrate the agent's role. They are not part of the original trace.", "langLabel": "Language", "title": "Agent and orchestration demos", "lede": "In the following demos you can explore, through examples and step-by-step animations, the components of an agent (prompts, harness, model, etc.) as well as the main strategies for orchestration and tool use.", "s1": "1. Anatomy of an agent", "s1lead": "A single agent from the inside: what the model answers, what the harness executes, how observations come back and how the prompt grows in each iteration.", "case": "Anatomy · case", "cases": [["Price agent", "Basic action and observation loop with a search engine and a calculator."], ["Function Calling", "Order status: the model returns a JSON call and the program executes it."], ["ReAct", "Duplicate charge complaint: thought, action and observation over five iterations."]], "s2": "2. Multi-agent orchestration patterns", "s2lead": "Each demo shows the flow at the workflow level: which agent receives which context, what it writes to the shared state, who decides the next step and where code and people step in. Each agent has a <b>system prompt<\/b> chip: hover or click to see its hypothetical instructions and tools. The names of people, companies, reference numbers and figures are fictitious.", "pattern": "Pattern", "sourceShort": "Source", "convHead": "Trace notation conventions", "convCols": ["Label", "Meaning"]};
+window.UI = {"social": "Social media", "index": "Demo index", "prevPattern": "Previous pattern", "nextPattern": "Next pattern", "theme": "Light / dark theme", "reset": "Restart", "prev": "Previous", "play": "Play", "pause": "Pause", "next": "Next", "replay": "Replay animation", "speed": "Speed", "slow": "Slow", "normal": "Normal", "fast": "Fast", "keys": "Arrow keys to move forward or back, space to play", "sharedState": "Shared state", "fullTrace": "Show the full trace (upcoming lines appear faded)", "types": {"input": "Input", "agent": "Agent", "code": "Code", "human": "Person", "output": "Output", "state": "State", "tool": "Tool"}, "flows": {"ctx": "Context", "res": "Result", "handoff": "Handoff", "human": "Person", "ctrl": "Control", "fb": "Feedback"}, "parts": {"input": "Original input", "instr": "Instruction", "state": "From shared state", "result": "Result from another agent", "feedback": "Feedback", "human": "From a person", "desc": "Agent descriptions", "hist": "History"}, "scenario": "Scenario", "source": "Example source", "patternOf": "Pattern {n} of {t}", "reading": "Reading the trace", "refs": "References", "flow": "Flow", "spLegend": "hover or click to see each agent's instructions", "spAria": "See the system prompt of", "flowsInStep": "Information flows in this step", "ctxHead": "Context received", "receives": "Receives", "notReceive": "Does not receive", "produces": "Produces", "updated": "UPDATED", "isNew": "NEW", "writes": "written by", "empty": "Still empty.", "stepOf": "Step {n} of {t}", "close": "Close", "spTools": "Tools it can call", "spOut": "Expected output format", "spNote": "Notice:", "spFoot": "Hypothetical instructions, written to illustrate the agent's role. They are not part of the original trace.", "fwTitle": "How frameworks implement it", "fwDemo": "In this demo:", "fwCols": ["Framework", "How it routes", "Does control return?", "API"], "fwEquiv": "Equivalent in the demo:", "fwSources": "Sources", "fwReviewed": "Reviewed on", "fwChip": "in frameworks", "fwSee": "See the full comparison", "langLabel": "Language", "title": "Agent and orchestration demos", "lede": "In the following demos you can explore, through examples and step-by-step animations, the components of an agent (prompts, harness, model, etc.) as well as the main strategies for orchestration and tool use.", "s1": "1. Anatomy of an agent", "s1lead": "A single agent from the inside: what the model answers, what the harness executes, how observations come back and how the prompt grows in each iteration.", "case": "Anatomy · case", "cases": [["Price agent", "Basic action and observation loop with a search engine and a calculator."], ["Function Calling", "Order status: the model returns a JSON call and the program executes it."], ["ReAct", "Duplicate charge complaint: thought, action and observation over five iterations."]], "s2": "2. Multi-agent orchestration patterns", "s2lead": "Each demo shows the flow at the workflow level: which agent receives which context, what it writes to the shared state, who decides the next step and where code and people step in. Each agent has a <b>system prompt<\/b> chip: hover or click to see its hypothetical instructions and tools. The names of people, companies, reference numbers and figures are fictitious.", "pattern": "Pattern", "sourceShort": "Source", "convHead": "Trace notation conventions", "convCols": ["Label", "Meaning"]};
 window.META = {
  "num": 4,
  "total": 16,
@@ -439,10 +464,56 @@ Instructions:
 
 </script>
 <script>
+window.FRAMEWORKS = {
+  reviewed: 'October 10, 2026',
+  demo: 'each agent transfers full control with a tool (<code>transfer</code>) and does not take part again. Each transfer includes the full trace, and a counter in code limits the conversation to 5 transfers.',
+  cols: ['Framework', 'How it transfers', 'Context the next agent receives', 'Limits and API'],
+  rows: [
+    {
+      fw: 'Google ADK',
+      how: 'The active agent calls <code>transfer_to_agent</code>. In the default mode (<code>chat</code>), the receiving agent keeps control until it transfers to another one.',
+      back: 'The conversation session, which the agents share.',
+      api: '<code>disallow_transfer_to_parent</code> and <code>disallow_transfer_to_peers</code> restrict who can be transferred to. <code>RunConfig(max_llm_calls=...)</code> caps the model calls per run (500 by default).'
+    },
+    {
+      fw: 'LangGraph (swarm) / LangChain (handoffs)',
+      how: 'Tools created with <code>create_handoff_tool</code> that return a <code>Command(goto=...)</code>. The system remembers which agent was last active and the next interaction resumes with it (requires a checkpointer).',
+      back: 'By default, the full message history plus a tool message confirming the handoff.',
+      api: '<code>langgraph-swarm</code>. <code>recursion_limit</code> caps the graph\'s super-steps (1000 by default since version 1.0.6) and raises <code>GraphRecursionError</code>.'
+    },
+    {
+      fw: 'OpenAI Agents SDK',
+      how: 'Handoffs are presented to the LLM as tools named <code>transfer_to_&lt;agent&gt;</code>. The new agent takes over the conversation.',
+      back: 'The entire previous history. With <code>input_filter</code> you can trim what is forwarded.',
+      api: '<code>handoffs=[...]</code>, <code>input_filter</code>'
+    },
+    {
+      fw: 'Microsoft Agent Framework',
+      how: 'Mesh topology, without an orchestrator. The handoff is done with a tool the framework injects based on the handoff rules. If the agent replies without handing off, control goes back to the user.',
+      back: 'The user and agent messages; tool calls, including handoff calls, are filtered out before forwarding.',
+      api: '<code>HandoffBuilder</code> with <code>add_handoff</code>. Autonomous mode has a per-agent turn limit. Sensitive tools can require human approval.'
+    }
+  ],
+  equiv: 'if the agent that transfers gets control back when the other one finishes, the behavior matches <a href="03_coordinator_dispatcher.html">pattern 3, Coordinator/dispatcher</a>.',
+  sources: [
+    'Google. <i>Multi-agent patterns</i>, <i>LLM agents</i> and <i>Runtime config</i>. ADK Docs. <a href="https://github.com/google/adk-docs/tree/main/docs" target="_blank" rel="noopener">github.com/google/adk-docs</a>',
+    'LangChain. <i>langgraph-swarm</i>. <a href="https://github.com/langchain-ai/langgraph-swarm-py" target="_blank" rel="noopener">github.com/langchain-ai/langgraph-swarm-py</a>',
+    'LangChain. <i>Handoffs</i> and <i>Graph API</i>. <a href="https://docs.langchain.com/oss/python/langchain/multi-agent/handoffs" target="_blank" rel="noopener">docs.langchain.com/oss/python/langchain/multi-agent/handoffs</a>',
+    'OpenAI. <i>Handoffs</i>. Agents SDK. <a href="https://openai.github.io/openai-agents-python/handoffs/" target="_blank" rel="noopener">openai.github.io/openai-agents-python/handoffs</a>',
+    'Microsoft. <i>Handoff orchestration</i>. Agent Framework. <a href="https://learn.microsoft.com/en-us/agent-framework/workflows/orchestrations/handoff" target="_blank" rel="noopener">learn.microsoft.com/.../orchestrations/handoff</a>'
+  ],
+  toolNotes: (() => {
+    const n = { transfer: 'ADK: <code>transfer_to_agent</code>. LangGraph: <code>create_handoff_tool</code> (swarm). OpenAI Agents SDK: <code>transfer_to_&lt;agent&gt;</code>. Agent Framework: a handoff tool added by <code>HandoffBuilder</code>.' };
+    return { tri: n, red: n, fin: n };
+  })()
+};
+
+</script>
+<script>
 /* Motor común de los demos de patrones de orquestación.
    Lee window.PATRON (diagrama y pasos) y window.META (textos extraídos del .md). */
 (function () {
-  const P = window.PATRON, M = window.META, SP = window.PROMPTS || {}, T = window.UI;
+  const P = window.PATRON, M = window.META, SP = window.PROMPTS || {}, T = window.UI, FW = window.FRAMEWORKS;
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -470,6 +541,18 @@ Instructions:
   $('intro').innerHTML = M.intro + (P.extra ? ' ' + P.extra : '');
   $('reading').innerHTML = '<h2>' + T.reading + '</h2><ul>' + M.lectura.map(l => '<li>' + l + '</li>').join('') + '</ul>' +
     '<h2 style="margin-top:14px">' + T.refs + '</h2><div class="refs">' + M.refs.map(r => '<p>' + r + '</p>').join('') + '</div>';
+  /* Sección opcional: cómo implementan el patrón los frameworks */
+  if (FW) {
+    const fw = $('frameworks');
+    fw.hidden = false;
+    fw.innerHTML = `<summary><h2>${T.fwTitle}</h2></summary>` +
+      `<p class="fw-demo"><b>${T.fwDemo}</b> ${FW.demo}</p>` +
+      '<div class="fw-scroll"><table class="fw-table"><thead><tr>' + (FW.cols || T.fwCols).map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>' +
+      FW.rows.map(r => `<tr><td><b>${r.fw}</b></td><td>${r.how}</td><td>${r.back}</td><td>${r.api}</td></tr>`).join('') +
+      '</tbody></table></div>' +
+      (FW.equiv ? `<p class="fw-equiv"><b>${T.fwEquiv}</b> ${FW.equiv}</p>` : '') +
+      `<div class="refs"><b>${T.fwSources}</b> (${T.fwReviewed} ${FW.reviewed})` + FW.sources.map(x => '<p>' + x + '</p>').join('') + '</div>';
+  }
   $('boardTab').textContent = P.boardTitle || T.sharedState;
 
   /* Leyenda con los tipos que aparecen en este patrón */
@@ -730,6 +813,15 @@ Instructions:
     });
     return out.join('\n');
   }
+  /* Nota breve de frameworks para una herramienta de orquestación (hover en el chip, clic lleva a la sección) */
+  function fwNote(id, sig) {
+    const notes = FW && FW.toolNotes && FW.toolNotes[id];
+    if (!notes) return '';
+    const key = Object.keys(notes).find(k => sig.startsWith(k + '('));
+    if (!key) return '';
+    return `<button class="fw-chip" type="button">${T.fwChip}</button>` +
+      `<div class="fw-line">${notes[key]} <a href="#frameworks" class="fw-go">${T.fwSee}</a></div>`;
+  }
   function popHtml(id) {
     const d = SP[id], n = nodeById[id] || { name: id, tag: '' };
     const tools = d.tools || [];
@@ -738,7 +830,7 @@ Instructions:
       `<button class="sp-close" type="button" aria-label="${T.close}">${T.close}</button></div>` +
       `<pre class="sp-text">${esc(reflow(d.prompt))}</pre>` +
       (tools.length ? '<div class="sp-sec">' + T.spTools + '</div>' + tools.map(t =>
-        `<div class="sp-tool"><code>${esc(t.sig)}</code><div>${esc(t.desc)}</div></div>`).join('') : '') +
+        `<div class="sp-tool"><code>${esc(t.sig)}</code><div>${esc(t.desc)}</div>${fwNote(id, t.sig)}</div>`).join('') : '') +
       (d.salida ? `<div class="sp-sec">${T.spOut}</div><pre class="sp-text small">${esc(d.salida)}</pre>` : '') +
       (d.nota ? `<div class="sp-note"><b>${T.spNote}</b> ${d.nota}</div>` : '') +
       '<div class="sp-foot">' + T.spFoot + '</div>';
@@ -793,6 +885,11 @@ Instructions:
     const chip = e.target.closest('.sp-chip[data-sp]');
     if (chip) { e.preventDefault(); e.stopPropagation(); pinned = false; showPop(chip, true); return; }
     if (e.target.closest('.sp-close')) { hidePop(true); return; }
+    if (e.target.closest('.fw-chip, .fw-go')) {
+      e.preventDefault(); hidePop(true);
+      const fw = $('frameworks'); fw.open = true; fw.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     if (pinned && !e.target.closest('#spPop')) hidePop(true);
   });
   document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.sp-chip[data-sp]') && !pinned) showPop(e.target, false); });

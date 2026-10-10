@@ -5,7 +5,8 @@ Uso:  python3 _build/verificar.py   (requiere: pip install playwright && playwri
 
 Comprueba en cada patrón: sin errores de JavaScript, todas las marcas del trace
 encontradas, cada agente con system prompt y cada prompt asociado a un nodo,
-popovers visibles al pasar el cursor sin tapar su chip. Revisa además que no
+popovers visibles al pasar el cursor sin tapar su chip, notas de frameworks
+asociadas a herramientas reales. Revisa además que no
 haya em-dashes ni en-dashes, que no exista desborde horizontal en 390 px y que
 los enlaces relativos entre páginas (incluido el cambio de idioma) existan.
 """
@@ -47,6 +48,8 @@ def main():
               return {
                 trace: window.__traceErrors,
                 missing: nodes.filter(n => n.type === 'agent' && !sp[n.id]).map(n => n.id),
+                fwOrphan: Object.entries((window.FRAMEWORKS && window.FRAMEWORKS.toolNotes) || {}).flatMap(([id, notes]) =>
+                  Object.keys(notes).filter(k => !(sp[id] && (sp[id].tools || []).some(t => t.sig.startsWith(k + '(')))).map(k => id + '.' + k)),
                 orphan: Object.keys(sp).filter(k => !nodes.find(n => n.id === k)),
                 steps: PATRON.steps.length
               };
@@ -56,6 +59,8 @@ def main():
                 problems.append(f"{name}: {e}")
             if info["missing"]:
                 problems.append(f"{name}: agentes sin system prompt {info['missing']}")
+            if info["fwOrphan"]:
+                problems.append(f"{name}: notas de frameworks sin herramienta {info['fwOrphan']}")
             if info["orphan"]:
                 problems.append(f"{name}: prompts sin nodo {info['orphan']}")
             for chip in page.query_selector_all(".nd .sp-chip"):

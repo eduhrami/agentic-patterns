@@ -6,7 +6,9 @@ Uso:  python3 _build/construir.py   (desde demos_agentes/ o desde cualquier ruta
 Para cada idioma de LANGS toma del .md de traces el título, la introducción, el
 trace, la lectura y las referencias de cada patrón; de los archivos de datos
 (_build/patrones o _build/en/patterns) el diagrama y los pasos, y de los de
-prompts (_build/prompts o _build/en/prompts) los system prompts hipotéticos.
+prompts (_build/prompts o _build/en/prompts) los system prompts hipotéticos, y
+de los opcionales de frameworks (_build/frameworks o _build/en/frameworks) la
+comparación de cómo implementan el patrón los principales frameworks.
 Genera las páginas autocontenidas de cada patrón y el índice de cada idioma:
   es: index.html y patrones/NN_slug.html
   en: en/index.html y en/patterns/NN_slug.html
@@ -40,7 +42,7 @@ LANGS = {
         "md": BASE / "traces_patrones_orquestacion.md",
         "root": BASE,                      # carpeta del índice
         "pages": "patrones",               # subcarpeta de los patrones (relativa a root)
-        "data": BUILD / "patrones", "prompts": BUILD / "prompts",
+        "data": BUILD / "patrones", "prompts": BUILD / "prompts", "frameworks": BUILD / "frameworks",
         "anatomy": "anatomia_agentes.html", "anatomy_hash": ["precios", "fc", "react"],
         "reading_mark": "**Lectura del trace**", "refs_head": "## Referencias",
         "ui": {
@@ -68,6 +70,10 @@ LANGS = {
             "spTools": "Herramientas que puede invocar", "spOut": "Formato de salida esperado",
             "spNote": "Observa:",
             "spFoot": "Instrucciones hipotéticas, redactadas para ilustrar el rol del agente. No forman parte del trace original.",
+            "fwTitle": "Cómo lo implementan los frameworks", "fwDemo": "En este demo:",
+            "fwCols": ["Framework", "Cómo enruta", "¿Regresa el control?", "API"],
+            "fwEquiv": "Equivale en el demo a:", "fwSources": "Fuentes", "fwReviewed": "Revisado el",
+            "fwChip": "en los frameworks", "fwSee": "Ver la comparación completa",
             # Índice
             "langLabel": "Idioma",
             "title": "Demos de agentes y orquestación",
@@ -88,7 +94,7 @@ LANGS = {
         "md": BASE / "en" / "orchestration_patterns_traces.md",
         "root": BASE / "en",
         "pages": "patterns",
-        "data": BUILD / "en" / "patterns", "prompts": BUILD / "en" / "prompts",
+        "data": BUILD / "en" / "patterns", "prompts": BUILD / "en" / "prompts", "frameworks": BUILD / "en" / "frameworks",
         "anatomy": "agent_anatomy.html", "anatomy_hash": ["prices", "fc", "react"],
         "reading_mark": "**Reading the trace**", "refs_head": "## References",
         "ui": {
@@ -116,6 +122,10 @@ LANGS = {
             "spTools": "Tools it can call", "spOut": "Expected output format",
             "spNote": "Notice:",
             "spFoot": "Hypothetical instructions, written to illustrate the agent's role. They are not part of the original trace.",
+            "fwTitle": "How frameworks implement it", "fwDemo": "In this demo:",
+            "fwCols": ["Framework", "How it routes", "Does control return?", "API"],
+            "fwEquiv": "Equivalent in the demo:", "fwSources": "Sources", "fwReviewed": "Reviewed on",
+            "fwChip": "in frameworks", "fwSee": "See the full comparison",
             "langLabel": "Language",
             "title": "Agent and orchestration demos",
             "lede": "In the following demos you can explore, through examples and step-by-step animations, the components of an agent (prompts, harness, model, etc.) as well as the main strategies for orchestration and tool use.",
@@ -234,6 +244,7 @@ def build_lang(lang):
             print(f"  [{lang}] sin datos: {data_file.name}")
             continue
         prompts_file = cfg["prompts"] / f"{num:02d}.js"
+        fw_file = cfg["frameworks"] / f"{num:02d}.js"
         sec, idx = sections[num], index[num]
         meta = {
             "num": num, "total": len(nums), "title": sec["title"], "short": idx["patron"],
@@ -254,6 +265,7 @@ def build_lang(lang):
                    .replace("{{META}}", meta_js)
                    .replace("{{DATA}}", data_file.read_text(encoding="utf-8"))
                    .replace("{{PROMPTS}}", prompts_file.read_text(encoding="utf-8") if prompts_file.exists() else "window.PROMPTS = {};")
+                   .replace("{{FRAMEWORKS}}", fw_file.read_text(encoding="utf-8") if fw_file.exists() else "window.FRAMEWORKS = null;")
                    .replace("{{JS}}", js))
         (out / fname(lang, num)).write_text(page, encoding="utf-8")
         built.append(num)

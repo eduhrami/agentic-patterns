@@ -1,7 +1,7 @@
 /* Motor común de los demos de patrones de orquestación.
    Lee window.PATRON (diagrama y pasos) y window.META (textos extraídos del .md). */
 (function () {
-  const P = window.PATRON, M = window.META, SP = window.PROMPTS || {}, T = window.UI;
+  const P = window.PATRON, M = window.META, SP = window.PROMPTS || {}, T = window.UI, FW = window.FRAMEWORKS;
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -29,6 +29,18 @@
   $('intro').innerHTML = M.intro + (P.extra ? ' ' + P.extra : '');
   $('reading').innerHTML = '<h2>' + T.reading + '</h2><ul>' + M.lectura.map(l => '<li>' + l + '</li>').join('') + '</ul>' +
     '<h2 style="margin-top:14px">' + T.refs + '</h2><div class="refs">' + M.refs.map(r => '<p>' + r + '</p>').join('') + '</div>';
+  /* Sección opcional: cómo implementan el patrón los frameworks */
+  if (FW) {
+    const fw = $('frameworks');
+    fw.hidden = false;
+    fw.innerHTML = `<summary><h2>${T.fwTitle}</h2></summary>` +
+      `<p class="fw-demo"><b>${T.fwDemo}</b> ${FW.demo}</p>` +
+      '<div class="fw-scroll"><table class="fw-table"><thead><tr>' + (FW.cols || T.fwCols).map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>' +
+      FW.rows.map(r => `<tr><td><b>${r.fw}</b></td><td>${r.how}</td><td>${r.back}</td><td>${r.api}</td></tr>`).join('') +
+      '</tbody></table></div>' +
+      (FW.equiv ? `<p class="fw-equiv"><b>${T.fwEquiv}</b> ${FW.equiv}</p>` : '') +
+      `<div class="refs"><b>${T.fwSources}</b> (${T.fwReviewed} ${FW.reviewed})` + FW.sources.map(x => '<p>' + x + '</p>').join('') + '</div>';
+  }
   $('boardTab').textContent = P.boardTitle || T.sharedState;
 
   /* Leyenda con los tipos que aparecen en este patrón */
@@ -289,6 +301,15 @@
     });
     return out.join('\n');
   }
+  /* Nota breve de frameworks para una herramienta de orquestación (hover en el chip, clic lleva a la sección) */
+  function fwNote(id, sig) {
+    const notes = FW && FW.toolNotes && FW.toolNotes[id];
+    if (!notes) return '';
+    const key = Object.keys(notes).find(k => sig.startsWith(k + '('));
+    if (!key) return '';
+    return `<button class="fw-chip" type="button">${T.fwChip}</button>` +
+      `<div class="fw-line">${notes[key]} <a href="#frameworks" class="fw-go">${T.fwSee}</a></div>`;
+  }
   function popHtml(id) {
     const d = SP[id], n = nodeById[id] || { name: id, tag: '' };
     const tools = d.tools || [];
@@ -297,7 +318,7 @@
       `<button class="sp-close" type="button" aria-label="${T.close}">${T.close}</button></div>` +
       `<pre class="sp-text">${esc(reflow(d.prompt))}</pre>` +
       (tools.length ? '<div class="sp-sec">' + T.spTools + '</div>' + tools.map(t =>
-        `<div class="sp-tool"><code>${esc(t.sig)}</code><div>${esc(t.desc)}</div></div>`).join('') : '') +
+        `<div class="sp-tool"><code>${esc(t.sig)}</code><div>${esc(t.desc)}</div>${fwNote(id, t.sig)}</div>`).join('') : '') +
       (d.salida ? `<div class="sp-sec">${T.spOut}</div><pre class="sp-text small">${esc(d.salida)}</pre>` : '') +
       (d.nota ? `<div class="sp-note"><b>${T.spNote}</b> ${d.nota}</div>` : '') +
       '<div class="sp-foot">' + T.spFoot + '</div>';
@@ -352,6 +373,11 @@
     const chip = e.target.closest('.sp-chip[data-sp]');
     if (chip) { e.preventDefault(); e.stopPropagation(); pinned = false; showPop(chip, true); return; }
     if (e.target.closest('.sp-close')) { hidePop(true); return; }
+    if (e.target.closest('.fw-chip, .fw-go')) {
+      e.preventDefault(); hidePop(true);
+      const fw = $('frameworks'); fw.open = true; fw.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     if (pinned && !e.target.closest('#spPop')) hidePop(true);
   });
   document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.sp-chip[data-sp]') && !pinned) showPop(e.target, false); });

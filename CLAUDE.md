@@ -37,6 +37,8 @@ _build/
     prompts/NN.js              System prompts en español (window.PROMPTS)
     en/patterns/NN.js          Diagrama y pasos en inglés
     en/prompts/NN.js           System prompts en inglés
+    frameworks/NN.js           Opcional: comparación con frameworks (window.FRAMEWORKS), español
+    en/frameworks/NN.js        Opcional: comparación con frameworks, inglés
 .nojekyll                      Necesario para que GitHub Pages sirva la carpeta _build/
 ```
 
@@ -148,6 +150,31 @@ window.PROMPTS = {
   de la página: no repetir nombres entre ambos archivos del mismo patrón.
 - Saltos de línea manuales a ~78 columnas; el motor los reacomoda (`reflow`) conservando viñetas
   y encabezados terminados en ":".
+
+## Comparación con frameworks (`_build/frameworks/NN.js`, opcional)
+
+Sección desplegable "Cómo lo implementan los frameworks", entre los paneles y la lectura del trace,
+más un chip "en los frameworks" junto a las herramientas de orquestación en el popover del system
+prompt (hover muestra una línea; clic abre la sección). Si un patrón no tiene archivo, no aparece nada.
+Existe para los patrones de delegación: 3, 4, 8, 9 y 10.
+
+```js
+window.FRAMEWORKS = {
+  reviewed: 'fecha de revisión de las fuentes',
+  demo: 'HTML: qué mecanismo usa el demo y por qué',
+  cols: ['...', '...', '...', '...'],      // opcional: encabezados propios (por defecto: framework, cómo enruta, ¿regresa el control?, API)
+  rows: [{ fw, how, back, api }],           // HTML; una fila por framework o variante; los campos siguen el orden de cols
+  equiv: 'HTML: a qué patrón del demo equivale la variante distinta',  // opcional
+  sources: ['HTML de cada referencia'],
+  toolNotes: { idDelNodo: { nombre_herramienta: 'HTML de una línea' } }  // opcional
+};
+```
+
+- El demo mantiene un mecanismo uniforme en todos los patrones; esta sección explica en qué se
+  parece y en qué difiere de cada framework. No cambiar los prompts para imitar un framework.
+- Cada fila debe estar respaldada por la documentación oficial citada en `sources`, con la fecha
+  de revisión. Estas APIs cambian rápido: revisar las fuentes antes de editar.
+- `toolNotes` se asocia por el nombre de la herramienta (el inicio de `sig` en el prompt).
 
 ## Diseño y comportamiento
 - Páginas autocontenidas: sin CDN ni dependencias externas; deben abrirse con doble clic (file://).

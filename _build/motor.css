@@ -199,3 +199,27 @@ pre.trace .gone { display: none; }
 .autor nav { display: flex; gap: 14px; flex-wrap: wrap; }
 .autor a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--border); }
 .autor a:hover { color: var(--text); border-bottom-color: var(--text); }
+
+/* Cómo lo implementan los frameworks */
+details.fw { margin-top: 14px; }
+details.fw summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+details.fw summary::-webkit-details-marker { display: none; }
+details.fw summary::before { content: "+"; font-weight: 800; color: var(--muted); width: 14px; }
+details.fw[open] summary::before { content: "\2212"; }
+details.fw summary h2 { font-size: 1.05rem; margin: 0; }
+.fw-demo, .fw-equiv { font-size: .9rem; margin: 10px 0; }
+.fw-scroll { overflow-x: auto; }
+table.fw-table { width: 100%; border-collapse: collapse; font-size: .84rem; min-width: 640px; }
+table.fw-table th, table.fw-table td { border: 1px solid var(--border); padding: 7px 9px; text-align: left; vertical-align: top; }
+table.fw-table th { background: var(--panel2); }
+table.fw-table code { font-size: .78rem; }
+details.fw .refs { margin-top: 10px; }
+details.fw .refs p { margin: 4px 0 0; }
+.fw-chip {
+  margin-top: 4px; cursor: pointer; font-size: .62rem; font-weight: 800; letter-spacing: .03em;
+  background: var(--panel); color: var(--info); border: 1.5px solid var(--info); border-radius: 999px; padding: 0 7px;
+}
+.fw-chip:hover, .fw-chip:focus-visible { background: var(--info); color: var(--panel); outline: none; }
+.fw-line { display: none; margin-top: 4px; font-size: .76rem; color: var(--text); background: var(--panel2); border-radius: 6px; padding: 5px 8px; }
+.fw-line code { color: var(--text); font-weight: 600; }
+.sp-tool .fw-chip:hover + .fw-line, .sp-tool .fw-chip:focus + .fw-line, .sp-tool .fw-line:hover { display: block; }
