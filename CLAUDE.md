@@ -156,7 +156,7 @@ window.PROMPTS = {
 Sección desplegable "Cómo lo implementan los frameworks", entre los paneles y la lectura del trace,
 más un chip "en los frameworks" junto a las herramientas de orquestación en el popover del system
 prompt (hover muestra una línea; clic abre la sección). Si un patrón no tiene archivo, no aparece nada.
-Existe para los patrones de delegación: 3, 4, 8, 9 y 10.
+Existe para los 16 patrones.
 
 ```js
 window.FRAMEWORKS = {

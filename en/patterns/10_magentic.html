@@ -551,7 +551,7 @@ window.FRAMEWORKS = {
     {
       fw: 'Google ADK',
       how: 'No predefined Magentic orchestration. You build it with a coordinator that delegates with <code>AgentTool</code> or <code>transfer_to_agent</code>.',
-      back: 'The ledger lives in the session state. Approval is implemented with a tool that pauses execution, or with a <code>SecurityPlugin</code> and a <code>PolicyEngine</code> that ask for confirmation before a tool runs (the recommended approach in TypeScript; planned for other languages).',
+      back: 'The ledger lives in the session state. Approval is implemented with Tool Confirmation (<code>require_confirmation</code>, experimental), with your own tool that pauses execution, or with a <code>SecurityPlugin</code> and a <code>PolicyEngine</code> that ask for confirmation before a tool runs (the recommended approach in TypeScript; planned for other languages).',
       api: '<code>AgentTool</code>, session state, <code>SecurityPlugin</code>'
     },
     {
@@ -565,13 +565,14 @@ window.FRAMEWORKS = {
   sources: [
     'Microsoft. <i>Magentic orchestration</i>. Agent Framework. <a href="https://learn.microsoft.com/en-us/agent-framework/workflows/orchestrations/magentic" target="_blank" rel="noopener">learn.microsoft.com/.../orchestrations/magentic</a>',
     'Google. <i>Multi-agent patterns</i> (Human-in-the-loop). ADK Docs. <a href="https://github.com/google/adk-docs/blob/main/docs/workflows/patterns.md" target="_blank" rel="noopener">github.com/google/adk-docs/.../patterns.md</a>',
+    'Google. <i>Get action confirmation for ADK Tools</i>. ADK Docs. <a href="https://github.com/google/adk-docs/blob/main/docs/tools-custom/confirmation.md" target="_blank" rel="noopener">github.com/google/adk-docs/.../confirmation.md</a>',
     'LangChain. <i>Interrupts</i>. LangGraph. <a href="https://docs.langchain.com/oss/python/langgraph/interrupts" target="_blank" rel="noopener">docs.langchain.com/oss/python/langgraph/interrupts</a>'
   ],
   toolNotes: {
     man: {
       assign_task: 'Agent Framework: the Magentic manager picks the next agent and its instruction in the progress ledger. ADK: <code>AgentTool</code> or <code>transfer_to_agent</code>. LangGraph: a supervisor.',
       update_ledger: 'Agent Framework: built-in task ledger and progress ledger. ADK and LangGraph: the ledger lives in the state.',
-      request_approval: 'Agent Framework: plan review (<code>enable_plan_review</code>) or tools that require approval. ADK: a tool that pauses execution, or <code>SecurityPlugin</code> with <code>PolicyEngine</code> (TypeScript). LangGraph: <code>interrupt()</code>.'
+      request_approval: 'Agent Framework: plan review (<code>enable_plan_review</code>) or tools that require approval. ADK: <code>require_confirmation</code> on the tool, or <code>SecurityPlugin</code> with <code>PolicyEngine</code> (TypeScript). LangGraph: <code>interrupt()</code>.'
     }
   }
 };
